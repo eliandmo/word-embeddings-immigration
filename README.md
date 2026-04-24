@@ -125,9 +125,3 @@ pip install gensim pot numpy pandas matplotlib seaborn scikit-learn
 - Random seed: `np.random.seed(42)`
 - All code is self-contained — no external scripts required
 - Abstracts reproduced verbatim from Scopus export
-
----
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
