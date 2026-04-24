@@ -1,12 +1,6 @@
 # Applied Activity: From Word Embeddings to Semantic Similarity
 ### US Immigration Policy — Scopus Corpus
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/GloVe-wiki--gigaword--100-orange" alt="GloVe">
-  <img src="https://img.shields.io/badge/Corpus-7%20Scopus%20papers-red" alt="Corpus">
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-</p>
 
 <p align="center">
   <a href="https://eliandmo.github.io/word-embeddings-immigration/">
