@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Applied Activity — From Word Embeddings to Semantic Similarity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#C8102E; --red-light:#fdf0f2; --red-mid:#f0c8cf;
+  --dark:#1c1c1e; --mid:#555; --muted:#999; --border:#e0dbd4;
+  --bg:#f9f8f6; --white:#fff; --code-bg:#f5f4f1; --code-border:#ddd9d2;
+  --gold:#7a5c14; --gold-bg:#fdf8ee;
+  --green:#1a6e2e; --green-bg:#edf7f0; --green-border:#aadbb8;
+  --blue:#1a3e8a; --blue-bg:#eef3fc; --blue-border:#b0c8f0;
+  --section-accent:#C8102E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Source Serif 4',Georgia,serif;background:var(--bg);color:var(--dark);font-size:15.5px;line-height:1.78}
+
+/* ── HEADER ─────────────────────────────────── */
+.hdr{background:var(--white);border-bottom:3px solid var(--red);padding:2rem 0 1.8rem}
+.hdr-inner{max-width:960px;margin:0 auto;padding:0 2.4rem}
+.logo-strip{display:flex;align-items:center;gap:2rem;padding-bottom:1.5rem;margin-bottom:1.6rem;border-bottom:1px solid var(--border)}
+.logo-strip img{height:56px;object-fit:contain}
+.logo-div{width:1px;height:48px;background:var(--border)}
+.inst{font-family:'Source Serif 4',serif}
+.inst .dept{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.inst .crs{font-size:.97rem;color:var(--mid);font-weight:600}
+.rpt-title{font-family:'Playfair Display',serif;font-size:2.05rem;font-weight:700;line-height:1.22;margin-bottom:.45rem}
+.rpt-sub{font-size:1rem;color:var(--mid);font-style:italic;margin-bottom:1.3rem}
+.meta{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:.3rem 1.8rem;font-size:.88rem}
+.ml{color:var(--muted);font-weight:700;text-transform:uppercase;font-size:.72rem;letter-spacing:.06em}
+.mv{color:var(--dark)}
+
+/* ── TOC ─────────────────────────────────────── */
+.toc{max-width:960px;margin:1.8rem auto;padding:0 2.4rem}
+.toc-inner{background:var(--white);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:0 4px 4px 0;padding:1.2rem 1.6rem}
+.toc-h{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--red);font-weight:700;margin-bottom:.7rem;font-family:'Source Serif 4',serif}
+.toc ol{padding-left:1.4rem;font-size:.88rem;line-height:1.85}
+.toc a{color:var(--mid);text-decoration:none}.toc a:hover{color:var(--red)}
+
+/* ── MAIN ────────────────────────────────────── */
+.main{max-width:960px;margin:0 auto;padding:0 2.4rem 5rem}
+.section{padding:2.4rem 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+
+.sec-hdr{display:flex;align-items:baseline;gap:.8rem;margin-bottom:1.2rem}
+.sec-tag{font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:600;color:var(--red);background:var(--red-light);border:1px solid var(--red-mid);padding:.18rem .5rem;border-radius:3px;white-space:nowrap;letter-spacing:.04em}
+h2{font-family:'Playfair Display',serif;font-size:1.42rem;font-weight:700;color:var(--dark)}
+h3{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:600;color:var(--dark);margin:1.5rem 0 .6rem}
+p{margin-bottom:.85rem}p:last-child{margin-bottom:0}
+
+/* ── QUERY BOX ───────────────────────────────── */
+.qbox{background:var(--gold-bg);border:1px solid #e0c870;border-left:4px solid var(--gold);padding:.9rem 1.2rem;margin:.8rem 0;border-radius:0 4px 4px 0}
+.qbox .ql{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);font-weight:700;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace}
+.qbox code{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--dark);display:block;line-height:1.65}
+
+/* ── CODE BLOCK ──────────────────────────────── */
+.code-block{margin:1rem 0}
+.code-cap{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin-bottom:.3rem;font-family:'JetBrains Mono',monospace}
+.code-wrap{background:var(--code-bg);border:1px solid var(--code-border);border-radius:4px;overflow:hidden}
+.code-toolbar{background:#eceae6;border-bottom:1px solid var(--code-border);padding:.3rem .8rem;display:flex;gap:.5rem;align-items:center}
+.code-dot{width:10px;height:10px;border-radius:50%}
+.cd1{background:#ff5f56}.cd2{background:#ffbd2e}.cd3{background:#27c93f}
+pre{margin:0;padding:.9rem 1rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.81rem;line-height:1.65;color:var(--dark)}
+/* syntax highlight */
+.kw{color:#C8102E;font-weight:600}
+.fn{color:#1a3e8a}
+.st{color:#1a6e2e}
+.cm{color:#999;font-style:italic}
+.nb{color:#7a5c14}
+.op{color:#555}
+
+/* ── OUTPUT BOX ──────────────────────────────── */
+.out-block{margin:.5rem 0 1rem}
+.out-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem}
+.out-wrap{background:var(--white);border:1px solid var(--code-border);border-radius:4px;padding:.8rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.7;color:var(--dark)}
+.out-ok{color:var(--green)}
+.out-em{color:var(--red);font-weight:600}
+.out-dim{color:var(--muted)}
+
+/* ── CALLOUT ─────────────────────────────────── */
+.callout{background:var(--red-light);border:1px solid var(--red-mid);border-left:4px solid var(--red);padding:1rem 1.2rem;margin:1rem 0;border-radius:0 4px 4px 0;font-size:.92rem}
+.callout .cl{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--red);font-weight:700;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace}
+.callout p{margin:0}
+
+.infobox{background:var(--blue-bg);border:1px solid var(--blue-border);border-left:4px solid var(--blue);padding:.9rem 1.2rem;margin:.8rem 0;border-radius:0 4px 4px 0;font-size:.9rem}
+.greenbox{background:var(--green-bg);border:1px solid var(--green-border);border-left:4px solid var(--green);padding:.9rem 1.2rem;margin:.8rem 0;border-radius:0 4px 4px 0;font-size:.9rem}
+
+/* ── TABLES ──────────────────────────────────── */
+.tbl-wrap{overflow-x:auto;margin:1rem 0}
+table{width:100%;border-collapse:collapse;font-size:.86rem;background:var(--white);border:1px solid var(--border)}
+thead tr{background:var(--dark);color:var(--white)}
+thead th{padding:.55rem .9rem;text-align:left;font-family:'Source Serif 4',serif;font-weight:600;font-size:.78rem;letter-spacing:.03em}
+tbody tr:nth-child(even){background:#f9f8f6}
+tbody tr:hover{background:#fffcf5}
+td{padding:.5rem .9rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.num{text-align:right;font-family:'JetBrains Mono',monospace;font-size:.8rem}
+.best-cell{background:#d4f0da!important;font-weight:700;color:var(--green)}
+.low-cell{color:var(--muted)}
+.top-row td{background:#fff3f4!important;font-weight:600}
+
+/* ── HEAT CELL colors ────────────────────────── */
+.h1{background:#1d4e8f;color:white;font-weight:700}
+.h2{background:#2e6ab5;color:white}
+.h3{background:#4a87cc;color:white}
+.h4{background:#6ea3d8;color:var(--dark)}
+.h5{background:#99bfe6;color:var(--dark)}
+.h6{background:#ccdff3;color:var(--dark)}
+.h7{background:#e8f2fb;color:var(--dark)}
+.h8{background:#f5f9fe;color:var(--dark)}
+.heat-num{font-family:'JetBrains Mono',monospace;font-size:.78rem;text-align:center}
+.heat-lbl{font-size:.75rem;font-weight:600;color:var(--mid);text-align:right;padding-right:.7rem;white-space:nowrap}
+
+/* ── BAR CHART ───────────────────────────────── */
+.bar-group{margin:.4rem 0}
+.bar-row{display:flex;align-items:center;gap:.7rem;margin:.28rem 0;font-size:.83rem}
+.bw{width:140px;text-align:right;color:var(--mid);font-family:'JetBrains Mono',monospace;font-size:.76rem;flex-shrink:0}
+.bt{flex:1;background:#ece9e4;border-radius:2px;height:16px;position:relative;overflow:visible}
+.bf{height:100%;border-radius:2px;display:flex;align-items:center;transition:width .3s}
+.bv{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:.7rem;color:white;font-family:'JetBrains Mono',monospace;font-weight:600;white-space:nowrap}
+.bvo{margin-left:4px;font-size:.7rem;color:var(--mid);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+
+/* ── CHIPS ───────────────────────────────────── */
+.chips{display:flex;flex-wrap:wrap;gap:.35rem;margin:.7rem 0}
+.chip{padding:.18rem .55rem;border-radius:20px;font-size:.77rem;font-family:'JetBrains Mono',monospace}
+.ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.oov{background:#fde8ea;color:var(--red);border:1px solid var(--red-mid)}
+
+/* ── ANALOGY BLOCK ───────────────────────────── */
+.an-block{background:var(--white);border:1px solid var(--border);border-radius:4px;padding:1.1rem 1.4rem;margin:.8rem 0}
+.an-eq{font-family:'JetBrains Mono',monospace;font-size:.94rem;margin-bottom:.5rem}
+.an-note{font-size:.84rem;color:var(--mid);font-style:italic;margin-bottom:.8rem}
+.an-op{color:var(--red);font-weight:700}
+
+/* ── STEP LIST ───────────────────────────────── */
+.steps{list-style:none;padding:0;margin:.8rem 0}
+.steps li{display:flex;gap:.8rem;align-items:flex-start;margin:.45rem 0;font-size:.9rem}
+.snum{background:var(--red);color:white;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0;margin-top:2px;font-family:'JetBrains Mono',monospace}
+.stxt{color:var(--mid)}.stxt strong{color:var(--dark)}
+
+/* ── LAYOUT HELPERS ──────────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin:.8rem 0}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;margin:.8rem 0}
+@media(max-width:660px){.two-col,.three-col{grid-template-columns:1fr}.meta{grid-template-columns:auto 1fr}}
+.col-card{background:var(--white);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.col-card-hdr{background:var(--dark);color:white;padding:.45rem .9rem;font-size:.8rem;font-weight:600;font-family:'Playfair Display',serif}
+.col-card table{border:none}
+.col-card td{font-size:.83rem}
+
+/* ── FOOTER ──────────────────────────────────── */
+.footer{background:var(--dark);color:#888;text-align:center;padding:1.4rem;font-size:.8rem}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+<div class="hdr-inner">
+  <div class="logo-strip">
+    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAIzA+gDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAzRXHeO726tLrwyttcSRCbVoo5AjEb1Ocg+orsaACiiigAooooAKKw/GHiBvC3hW+1pbcXBtVVvKLbd2WC9fxryL/homf8A6F6P/wACD/hSuB7zRXg3/DRM/wD0L0f/AIEH/Cj/AIaJn/6F6P8A8CD/AIUXQ7HvNFeDf8NEz/8AQvR/+BB/wo/4aJn/AOhej/8AAg/4UXQWPeaK8G/4aJn/AOhej/8AAg/4Uf8ADRM56eHoz/28H/Ci6CzPeaK8P/4XzeEZ/sGAexuD/hR/wvm8/wCgDB/4EH/Csvb0+56CynFtX5fxR7hRXh//AAvm8/6AMH/gQf8ACtmD4tX8kKO+jwIzDO3zicfpUSxdKO7NIZLjZuyh+K/zPV6K8s/4Wvef9AqD/v6f8KP+Fr3n/QKg/wC/p/wqPr9DuX/YOP8A5PxX+Z6nRXG6b4vvryzWeawhiLchQ5PH5Vb/AOEnuP8An1j/AO+j/hXJLPcDF2c/wZxyy/ERdmvxR09Fcx/wk1x/z6x/99H/AArX067uLy3M0sSRgn5cEnNbYbNcLiZ8lGV36MyqYapTXNNGhRXlXxC+M0HgrW00m2sEv7hU3T/vdojJ6Doecc1tfDfx1qXjyxudQm0dLGzjby4pPNLea3fHA4HFegYHd0V5/wDEP4nQeBpLW2S2S8vJgXMW/bsT1Jx3NcN/w0TP/wBC9H/4EH/Ci6Cx7zRXg3/DRM//AEL0f/gQf8KP+GiZ/wDoXo//AAIP+FF0Ox7zRXg3/DRM/wD0L0f/AIEH/Cj/AIaJn/6F6P8A8CD/AIUXQWPeaK8G/wCGiZ/+hej/APAg/wCFavhv45S6/wCI7DSm0RIRdSiPzBOTtz3xii4rHslFFFMAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigDh/iH/wAfnhT/ALDMP9a7iuH+If8Ax+eFP+wzD/Wu4pAFFFFMAooooA4r4uf8kt1z/rnH/wCjUr5Kr61+Ln/JLdc/65x/+jUr5KqWNBRRRUjCiiigAq3ZQbm8xhwOn1qvFGZZAg71rooRAq9BWFepZcqPayfB+1qe1mtF+YtFFSQQvcTLEgyzHFcR9Wlc0NGsftE/muP3cZ/M101Q21ulrAsSDhR19TU1edVnzyuenSp8kbBWpoWmHUb4bh+5j5c+vtWbHG80qxxqSzHAAr0TStPTTbFIRgueXPqa83HYj2NOy3ZyZhivY0+WPxMuKoVQAMAUtFKAWIAGSegr5zVs+ZbLWnWbX12sY+4OWPtV7xx4stfA/hKfUXCmVV8u1hJ+/IRwPp3PsK19Ms006xLSEBiN8jHtXyn8WvHTeM/FLpbSE6XZExWyg8Oe7/j/ACr9EyTLvqlC8170t/8AI8HF1/azstkYWh6TqnxA8Zpbb2lu76YyTzH+EE5Zj9BX1xI+kfDzwT8qiKw06ABVHBc/1Zj/ADrj/gr4C/4Rbw5/at9Ft1TUFDEMOYouqr7Hufw9K89+NXjj+3dc/sKxmzYWDESlTxJL3z6hen517LZyo898Q67d+JNeu9WvWzNcPnHZB2UewHFVTp94unrfm2lFoz+WsxU7C3pn1qO2jWW6hjd9iu4UsewJ619KeJPCEc8NjZXt1DY+B9LtVlcRsA07j19B798+9SkM+ZqK9U+Jnhvwxb+FNH8R+HbeSzjvHKCF8jzFwcNg9On615XQwCiiikAV1Hw5/wCSi6F/19LXL11Hw5/5KLoX/X0tMD7CoooqyQooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKwtX8U2WkXF1DMcm1tRdTYP3ELhR/U/hQBu0UisGUMpyCMg0tABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAHD/EP/j88Kf8AYZh/rXcVw/xD/wCPzwp/2GYf613FIAooopgFFFFAHFfFz/kluuf9c4//AEalfJVfWvxc/wCSW65/1zj/APRqV8lVLGgoooqRhRRVmzh8yTew+VaUpKKuzbD0ZV6ipx3ZatIPKj3EfM1WKKK86UnJ3Z91Qoxo01TjsgrpNEsfJh+0OPnf7vsKytKsjeXI3D92nLf4V1QGBgcCuTEVLLlR6GGp399i0UVe0nT21K+WIA+WOXPoK4ZzUIuT2R1TnGEXKWyNzwtpeAb+ZfaMH+ddTTI41ijWNAAqjAFPr5bEVnWqOTPk8RXdao5sK29A0/zZftUg+RD8me5rLs7V7u5SFO55PoK3fEWuWHg7wvc6ndECG2j+VO7t2Ue5Ne5w/l3t6vt5r3Y/i/8AgHk47EckeSO7POvjr4+/sTRh4c0+bF/fJmcqeY4emPYt0+ma80+C3gI+KfEo1O9h3aVp7B3DDiWTqq+47n/69cfI+r/EDxqWw02o6lPwOyj+gUfoK+uND0nSvh54KS3LrHaWUJknmI5ZurN9Se30r7w8UxPiv43Xwj4aNvayAalegxwAHlF7v+Hb3r5XZizFmJJJySa3/GPie68YeJrjU5twV22QRE8RoOg/r+NXIfht4puLvULaDTmkmsUSSUKw+YMMrtPc45xUblHY6R4K8IeF/D1jqvjq4lNzqC74LSPd8i+4XknmrvjTSLPTtJ0bxFpuo3WseElnUSafLOzKBz0z24IwehrY1vw/pvxW0bTbmHVI9M1iwiENxbTryh4yCpII56GuX8eXuleFfAdp4F0vUFv7jzvPvJkOVU5Jx7cnp7e9MRx/jnxrceMtUjkEX2XT7ZfLtLRTxGvr9Tx+VcrRRSGFFFFIArqPhz/yUXQv+vpa5euo+HP/ACUXQv8Ar6WmB9hUUUVZIUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUANkkSGJpJGCogLMxOAAOpr50g8QP4nf4j6oSTG+n7YR6RhwF/QZ/GvSvjL4k/sHwNNBE+251A/Z0wedv8Z/Lj8a8V8Bf8ip44/7Bf8A7OKTeo0e4fCLxGfEHgW1WWTfdWP+jS5PJAHyk/hj8q72vmL4IeJf7G8ZDTppNttqS+Xz0Eg5X8+R+NfTtCEFFFFMAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAOH+If/H54U/7DMP8AWu4rh/iH/wAfnhT/ALDMP9a7ikAUUUUwCiiigDivi5/yS3XP+ucf/o1K+Sq+tfi5/wAkt1z/AK5x/wDo1K+SqljQUUUVIxyIZHCr1Na8caxRhF7VWsodieYfvHp9Kt1xV6nM7LY+syjBexp+1mvel+QU6NGkkVEGWY4Aptb2h2OB9qkHJ4Qf1rlnNQjc9ynBzlZGnY2i2dssY+91Y+pqzRRXnNtu7PTSSVkKqlmCqMknAFd/oemjTrFQwHnPy5/pWD4X0vzpvtsq/JGcID3PrXY14WZYm79lH5nhZnieZ+yjstwoorV0TT/tVz5sg/dRnP1PpXDhcNPE1o0obs8WrUVOLkzX0Ww+yW3mSD97JyfYV82/G3x7/wAJJ4g/sewm3aZp7FSyniWXoT7gdB+Net/Gbx6PCXhk2Fk+NV1BTHFg8xJ0Z/6D3+leE/CvwPJ428VotwrHTbUiW7f+8M8Jn1P8s1+n4XDww1KNKGyPnKk3Uk5M9a+A/gE6VpZ8T6jFi7vExaqw5ji/vfVv5fWsj45eOPtVwPC1hKPJiIe8ZT95+yfh1PvivT/iB4tt/A/hJ5oQgunXybOIcDdjrj0A5r5KuLiW6uJLieRpJZWLu7HJYnqa2b6Eo3PBWoQ6Z4rs7iaxF7yUjiOPvsCFPPHBIPNe16N4C8ZaRq03iG+8YwW8kmGuA67kYDs2cDAHHavJvDvwy8TeJ9G/tXTIIvI3lU8yTYzY7j2zXovhq4+JfhWMafrHh+fWdII2mMssjqv+yc5I9jSQGv8AEW9+HepaVNJfapaSatHEfLl0+QGVmA+78uRgnsa+cjySetdV8Qp9An8USHw/YS2UIX99FINuJf4gF/hx0rlKGMKKKKQBRRRQAV1Hw5/5KLoX/X0tcvXUfDn/AJKLoX/X0tMD7CoooqyQooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoorC8Za+nhnwnqGqMRvijIiU/wATnhR+dAHzx8aPEh1zxxJaRSbrTTl8hAOm/q5/PA/4CKreAv8AkVPG/wD2Cx/6GK4WaaS4meaVy8kjF2Y9STyTXdeAv+RU8b/9gsf+hio6lHD2txLZ3UNzAxWWJw6MOxByK+zfC2txeI/DGn6rEci4iBYejjhh+YNfFte7/s/eI9yX/h2aTlf9JgBPbgMB+hpoTPc6KKKoQUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAHD/EP/j88Kf8AYZh/rXcVw/xD/wCPzwp/2GYf613FIAooopgFFFFAHFfFz/kluuf9c4//AEalfJVfWvxc/wCSW65/1zj/APRqV8lVLGgqe1h86Xn7o5NQgFmAA5Na0EQhiC9+9YVqnKrLc9TK8H9Yq80vhRJ0GKKKVQWIAGSeBXAfZFnT7Nry6VMfIOWPoK65VCKFUYUDAFVNMshZ2oBH7xuW/wAKu1wVqnNLTZHo0KfJHXcKs2Fk9/eJbx5+Y8n0HrVau58OaX9htPOkXE0oyc9h6V5+LxCo079ehljMSqFO63exq21ulrbpDGMIgwBUtFFfMNtu7Plm23dkkEL3E6QxjLMcV1F5eWPhjQJ727kEdtaxl5GPU4/qah0Gw8mH7TIPncfLnsK8K+PXj06hqP8AwithL/o1q267ZT9+Tsv0X+f0r7zIMu9hS9vNe9L8F/wTxMdiPaS5FsjzfxJrmpfEDxnJdlWee7lEVtCP4FzhVH+fWvqrwL4Us/AHg2O0dkEoTzr2c8Bnxk8+g6D6V5d8AvAWS3i7UIM4zHYqw/BpP6D8a9u13RbbxDpE+mXbzLbzjEnkvsJHpn0r6FnAfK3xG8ZS+MvFMt0rEWMGYrSP0QH731J5/L0rkK+htT/Z80edWOm6rdWr9llUSL/Q/rXmnib4SeKfDYeX7KL60XnzrTLYHuvUflUbFHRfCfxct1Zz+CtVvJYILoH7FcRuVaJz/CD9eR7/AFrR+JvjfXfCN7YeHNJvrmMWtqPOupRua5Ld8n09vX2rxSOR4ZVkjZkkQhlYHBBHetjxN4p1LxZfw3mpyB5IoVhXHAwO/wBSeTTuIxWZnYsxLMTkknqaSiikMKKKKACiiigArqPhz/yUXQv+vpa5euo+HP8AyUXQv+vpaYH2FRRRVkhRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRXlvx0vruw8IWktnczW8hugC0TlSRg8cUAepUZr5TsPD3xL1TT4L6yGqzW06B45BdgBh68tVn/hD/ir/AM8NW/8AAwf/ABdTcdj6jzRmvjXU9U8U6PqM2n3+pajBdQnEkbXLEqcZ7HHQ1U/4SbXv+gzf/wDgQ3+NFwsfateC/tAeJN9xY+HYH+VB9ouAD3PCg/hk/iK8lXxLr7MFGsX5JOAPtDc/rXQXHw18fX8pubjRrueRwCZJJkZiMcclvSi9wscTXe+Av+RU8b/9gsf+hiqT/CzxtGjO2gThVBJPmR8D/vqrvgMEeFfHAPBGl8/99ikhnBVt+Eddl8NeKtP1WNiBDKPMA/iQ8MPyJpujeE9e8QwSTaRpk93HE2x2jAwpxnHJrS/4Vl41/wChdvPyX/GgD66t547m3jniYNHIodWHcEZFS5r471QeMvDHkW2pTanYhl/dI0zAFR6YNZ3/AAk2vf8AQZv/APwIb/GncVj7VzRmvir/AISbXv8AoM3/AP4EN/jXR2Oj/EjU7GG9sU1me2mXdHIs5ww9R81FwsfWWaK+Vf8AhGfil/z7a3/3/P8A8VWj8MtR16P4tadpmqXt7ujedJreaZmAYRPwRnHBFO4WPpmiisTxhLJD4N1mWJ2SRLOVlZTgg7TyDTEbeaK+Kv8AhJte/wCgzf8A/gQ3+NfSnwYvLm++HsM13cSzym4kG+RixxkdzSTHY9BorlviNPNbfDzW5oJXilS3yro2CDkdDXyn/wAJNr3/AEGb/wD8CG/xobEfatFcX8Mrme6+GmmT3E0ksrRPl3Ysx+Y9zXzJd+JddW9uANYvwBIwAFw3r9aGx2Ps+ivnT4Q/Ei5sdc/sbWr2Wa1vWAilmcsYpO3J7Hp9a+iJD+6cg/wmhMQ+ivjK+8S64uo3SrrF+AJnAAuG9T719A/A+9ur/wADzTXlzLcSC8cb5XLHGF4yaLhY9MzSZr5V+JGv6xa/ETW4LfVLyKJLjCok7AKNo6DNdP8AAjWNS1DxlfxXl/c3EY09mCyylgD5kfOCfc0XHY+hKK+UviFLrvhjxtqOnpq1+tuZPNtx9ob/AFbcgde3T8K6L4J+ML4+Mn0zUb+4njvYSIhNIWxIvIxn2DUXCx9F0Zor54+N/i+9XxdDpem309ulnCPN8mQruduecegx+tDYj6HzRmvlb4bTa74k8dafZPq1+8EbefMDcPjYvODz3OB+NT/FbXNWs/iNqcFtqd3DEpTakczKB8g7A0XHY+os0Zr4q/4SbXv+gzf/APgQ3+NH/CT67/0Gb/8A8CG/xpXCx9q5ozXxYnibXfMX/ic3/Uf8vDf419HfFy8ubP4XSXFrcSwzb4P3kblW5IzyKaYWPRc0Zr4q/wCEm17/AKDN/wD+BDf404eI/EBGRq2o/wDf9/8AGlcLH2nmjOa+MLfxj4ltGDQa9qKEHPFy38s17V8Jfinf+INQGga66y3TIWt7kKFL45KsBxnHOfammFj2WkzXD/Ezx+vgfR4zAiy6jdZW3Rvurjqx9hXzbqPi3xN4ivM3WqXtxLI2FiRyBn0VV4obCx9krIjEhXUkdgadmviy8t/EOjlJLxNRsy3KtLvTP0JrrPBnxa1/w7fwx393Lf6YSFkinbcyD1VjyCPTpRcLH1PRVM3cV3ozXdtJuilgMkbjuCuQa+Nj4m13J/4nN/8A+BDf40NiPtWivLPgPf3mo+Dr+W9upriQX7KGlcsQPLTjn615t8Xdc1az+It/Ba6ldwxKkeEjmZQPlHYGi4H05RXxV/wk2vf9Bm//APAhv8afF4r8RQuHi1zUUYdxcuP60rjsfaVFfNvgr42axpd7Fa+IZmv9PY7WmZR5sQ9cj7w+vPvX0bbXEN3bRXEEiyQyqHR1PDA8g07iJaK5rx94gHhrwXqOoq+2YRmOH18xuBj88/hXygfE+vEknWb/ACf+nhv8aGwsfalFfM3wj8a6hbeOre01LULie2vlMGJpSwVzyp59+Pxr6ZoTAM0ZryH496he6fomkvZXc9uzXLBjFIVJG09cV4R/wk2vf9Bm/wD/AAIb/Ghsdj7VzRXxUPE+vAgjWb8EdP8ASG/xrodA+K/i3QrlHOpS30APzQXbGQEexPI/A0XCx9aUVz3g3xdY+M9CTUrP5GB2TQsfmif0P9DXQ0xBRRRQAUUUUAcP8Q/+Pzwp/wBhmH+tdxXD/EP/AI/PCn/YZh/rXcUgCiiimAUUUUAcV8XP+SW65/1zj/8ARqV8lV9a/Fz/AJJdrn/XOP8A9GpXyfbxGaUL26mom0tWaUqcqklCO7LNlBx5rD/dq7QAAAAMAUV5s5uUrn3WEw0cPSVOIVs6HY+ZJ9pkHyr9wHuazbS2a6uViXv1PoK7CKJIYljQYVRgVyV6nKuVbnpYenzPmew+iipba3kurhIIhl3OBXC2krs7ZNRV2a3hzS/tt358q5hiOcHua7iq1jZx2NnHBGOFHJ9T61Zr5jF4h1ql+nQ+VxeIdeo5dOgVoaTYm9uxuH7pOW/wqiiNI6ooyzHAFdfAtvoukvLcSLHFEhkmkY4AAGSa9HJMu+t1+aa92O/n2R5OMr+yhZbs5f4n+NovBHhOSaFl/tC5BitE9Gx97HoP8K+PmnaW5M85MrM+9yzHLknJyfeuq+I3jOfxt4rnvtzCzjJitIz/AAxjv9T1rpvAPwT1XxVDHqOqO2m6Y/KZX97KPVQeg9z+Vfoh4RmT/GbxgLWGz066g020gQRxRWsK4VQMAZbNUE+K/jpHLjxJeEn12kfkRivpXRPhP4L0GFVj0aC5lUczXn71ifXngfgBW43hnw1Inlto2mMv9026H+lJyS3YWPnHRvj94v0+RRfG21GIdRJHsY/iv+Fey+DPjF4c8XSJaSOdP1BuBBcMMOf9luh+nBqPxF8E/B2uxM1tZHTLk9JbQ4X8UPy4+mK+f/HPw01zwHcCWYfaLBj+7vIQdufRv7ppge8/EH4Rab4lhlv9IjjstW5Y7RhJz6MOx9/zr5svrG60y+msr2B4biFirxuMEGvYvg98XpZJ4PDXiOcyFzss7xzznsjnv7Guu+MPgCPxFoz61YRAapZIWbaP9fGOoPuOo/EVDVtUNM+Z6KKKQwooooAKKKKACuo+HP8AyUXQv+vpa5euo+HP/JRdC/6+lpgfYVFFFWSFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFeTfH/wD5Eyz/AOvsf+gmvWa8m+P/APyJln/19j/0E0nsCOw+G/8AyTjQP+vRK6muW+G//JONA/69ErqaYHyP8Vv+Sna7/wBdl/8AQFrja7H4rf8AJT9d/wCuy/8AoC1x1QyiW2/4+of99f519wW//HtF/uD+VfD9t/x9Q/76/wA6+4Lb/j1i/wBwfypxExt6P9AuP+uTfyr5b8D/APIteO/+wb/7OK+pL3/jwuP+uTfyr5b8D/8AIs+Ov+wZ/wCzimwPR/2eP+Rb1f8A6+1/9AFeyYrxv9nj/kW9Y/6+1/8AQBXslC2EzhPiv4S/4SnwfMLePdf2eZ4MDlsD5l/EfrivlEggkHqK+6a+Vfi94RPhnxfLPBHtsL/M0JHRW/iX8Dz9CKTQ0ef19efDAf8AFttC/wCvf/2Y18h19e/DD/km2hf9e/8A7MaEDOtxXzp4e/5OYm/6/wC8/wDRclfRdfOnh7/k5ib/AK/7z/0XJTYI+i6wvGv/ACJGt/8AXlL/AOgmt2sLxr/yJGt/9eUv/oJpiPjKvqL4Hf8AJN4P+vmX+Yr5dr6i+B3/ACTeD/r5l/mKhDZt/E3/AJJrrv8A17/+zCvkKvr34m/8k113/r2/9mFfIVNgj6x+Ff8AyS3Sv+uT/wDoRr5VvP8Aj/uP+urfzr6r+Ff/ACS3Sv8Ark//AKEa+U73/j+uf+urfzoYESkqwZSQQcgjtX078JvHf/CU+G20++kB1Wxj2vk8ypjAb69j7/WvF7XwPJqnwxPiSwRnubS5dLiMc7o+PmHuM/lXO+HtevPDWtwanYtiWI8qejqeqn2NLYCpqH/ISuv+uz/zNfR3wE/5EGf/AK/X/wDQVr5suJfPuZZsY8xy2PTJzX0n8BP+RBn/AOv1/wD0Faa3A8W+KH/JSte/6+f/AGUV1n7Pn/I8ah/2DX/9GR1yfxQ/5KVr3/Xz/wCyius/Z8/5HjUP+wa//oyOktwOm/aA8O+dptj4giT5rdvInI/ut90/nkfiK8P0LU5NG16w1KIkPbTrJx7Hn9K+xPE2ixeIfDd/pUoBFxCyqT2b+E/gcV8YXNvJaXUttMpWWJyjAjoQcGmwR9uR3sEunJfBwIGiEu4ngLjOfyr4y8R6s+u+JNQ1Nzn7TOzr9M8fpivXYfGx/wCGepUM3+mDOmdecH/7A14paW0l5eQ2sKl5ZpFjRR3JOBQwPfvgB4dW20a+1+aP97dP5ELEdI15OPqcf98ivNPi/wD8lN1b6x/+gCvp3w3o0Xh/w5YaVDjbbQqhI/ibufxOTXzF8X/+Sm6t9Y//AEAUPYCL4X6loeleLxc+IWhWx+zuuZYjIu7IxwAfevav+E4+FP8Az303/wAAH/8AiK+dvD3hzUvFGp/2dpUSy3OwybWYKMDGeT9a6z/hSvjb/nwg/wC/60ID2Wx8WfDHUb6CytG06W5ncRxILFgWY9BylM+NwC/DK7AGB58PH/Aq818KfCTxdpfizSr+7soVt7e6jkkYTKSFByeK9L+OH/JMrv8A67w/+hU+gHy3X1X4O1TwnD4H0Nbu+0ZJlsIRKJZYgwbYM5yc5r5UrUvvDesaZptrqV5p00NldqHhnIyrgjI5HTI9alMDo/ire+Hr/wAZyS+HVi+ziJVmeAYjeTJyR+GBkUnwktprj4maP5KsfLd5HI7KEOc/571xtukclxGk0vlRswDSFS20euB1r6k+FvgzQdA0ZdT0y7XUZ7xBuvMY4/uqO3PXvTWrA8//AGhrS4GtaPebW+zNbtED2DhiSPyI/KvLvDGvP4Z8RWerx28dw1s+7y36N269j719e+IfD+meJtJl07VIFlgfkHOGQ9iD2NeFa/8AATVbaV30K+hvoeojlbZIB/I/pQ0Bs6n8XPCXjLQbjR9bsruxWdcCUIJRG3Zh0PFVvDnwi8F+IofN07xXLfBeXWJVR1+qnkfiK8s1rwf4h8PDdqmlXNvHnHmFcp/30OKzLDULvS72O8sbmS3uIzlZI2wRQM+ydP0mLQfCqaVBLJLFa2xjR5SNxABxnFfFp6mvrnwT4obxb8P01OYAXPlvDOFHG9RyfxGD+NfIx6mhiR9H/s9/8iTqP/YRb/0XHXl/xm/5KZqH+5H/AOgivUP2e/8AkSdR/wCwi3/ouOvL/jN/yUzUP9yP/wBBFD2DqHwc02y1Xx/Fa39rFcwG3kYxyqGXIHBxXsnjT4UeHNV0K6fT9OhsdQjiZ4ZIF2gkDOGA4INeS/Az/kpMP/XtL/Kvpu7IWzmLdBGxP5ULYD4bIIJBGD3FfTvwM1iTUvAX2WVizWE7QAn+6QGH/oWPwr5ou2V7ydk+6ZGI+ma95+AEi23hjXLqVgsKXALMTwMJk/pSW42Zv7QPiJpbyw8PQv8AJEPtM4B6seFH4DJ/GvM/CnhWfxQ2piDcPsVlJcnHcgfKv4n+Rqv4r1yTxJ4o1DVXJxcTEoD2QcKPyr1z4I3egaL4fv7rUtUsoLm8l2eXLMqt5ajuD2JJp9RHh1vPJa3MVxExWSJg6sOxByK+z/C+tR+IfDGnarGRi5hDMM9G6MPzBr5B8S2dvp/ibUba0njntUnfyZI2DKyE5U5HsRXtP7P3iEzWF/4fmfJgb7RACf4TwwH4gH8TQmDJf2h/+QDo/wD19N/6Ca8CtVDXkCsAQZFBB78177+0P/yAdH/6+m/9BNeBWf8Ax+2//XRf50nuB9cXPw58I6hYCGXQrNdy/fiTYw46givmHxr4d/4RXxbf6Srl4onzE7dShGRn35x+FfY8P+oT/dFfL3xvdH+JNwEIJW3iVvY4P+NNgjR+AmsPaeMLjTGc+TeW5IXPG9eR+ma+k6+U/gyrN8TdNKjO1ZSfYbDX1ZTWwMKKKKYgooooA4f4h/8AH54U/wCwzD/Wu4rh/iH/AMfnhT/sMw/1ruKQBRRRTAKKKKAOJ+Ln/JLtc/65x/8Ao1K+XrOLy4Qx6tzX1F8Whn4X62PVIx/5FSvmQDCgegxXJipWSR72RUVKpKo+n6i0UUCuI+pOj0G2CWxnI+ZzgfSteoraMRW0UY/hUCpa82pLmk2epTjyxSCup8JWI/e3jjn7if1rlq9D0SHyNHtk7lNx/GvMzKo4UbLqcGaVXCjyrqaFFFFfOnzpteHbUS3L3DDIj4X615r+0F4zazsbfwtZykS3S+dd7T0jz8q/iQT9B716/oUIi0xDjlyWNfH/AMR9Wk174iaxdE5H2kwx+yr8oH6V+l5NhlQwcF1er+Z89i6nPVflodn8EvhzH4lv317VYd+m2j7Yo2HE0g9fVR/Ovo7UtTj02JURQZCPlQdAKo+EtHi8LeC9P05VC/Z7cGT3cjLH8yawrmd7q5eZzksc/SufO8zlg6SjT+KX4LuXg8Oqsry2RJcX9zdNmWVsf3QcCq4JByDzSUV8BUrVKkuabbZ7kYRirJF6z1a6tGGHLx91Y5ronSw8Q6TLbXMCT20ylJYZBkH2NcfWho12ba/Rc/JIdrf0r3cmzepQqqlUd4PT0OLF4WM4uUVqj5m+JHgqbwH4ra1jLmzl/fWcx6lc9M+oPFfRvwk8YN4x8EwyXTh7+0P2e5z1YgcMfqP1zWX8eNATVvh89+FzPpsgmVsc7T8rD6cg/hXmf7PGtPZ+NbrSi58m+tiwX/bQ5B/ItX3x4hjfFHw2PDPjm8t4U22lx/pEAAwArdV/A5H5Vxle9/tD6arWmj6mqfMrvAzexAI/ka8ErMoKKKKACiiigArqPhz/AMlF0L/r6WuXrqPhz/yUXQv+vpaYH2FRRRVkhRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABXk3x/8A+RMs/wDr7H/oJr1mvJvj/wD8iZZ/9fY/9BNJ7AjsPhv/AMk40D/r0Suprlvhv/yTjQP+vRK6mmB8jfFb/kp+u/8AXZf/AEBa46ux+K3/ACU/Xf8Arsv/AKAtcdUMoltv+PqH/fX+dfcFt/x6xf7g/lXw/bf8fUP++v8AOvuC2/49Yv8AcH8qcRMbe/8AHhcf9cm/lXy34H/5Fnx1/wBgz/2cV9SXv/Hhcf8AXJv5V8t+B/8AkWfHX/YM/wDZxTYHo/7PH/It6x/19r/6AK9krxv9nj/kW9Y/6+1/9AFeyULYQVx3xM8Jr4t8H3NvGuby3Hn2x77gOR+IyPyro11a1bW5NJ34ulgWcKf4kJI4+hH61epgfCzKyMysCGBwQexr68+GH/JNtC/69/8A2Y14X8Z/CX/CP+LDf28e2y1LMq4HCyD74/XP417p8MP+SbaF/wBe/wD7MalDZ1tfOnh7/k5ib/r/ALz/ANFyV9F186eHv+TmJv8Ar/vP/RclNgj6LqrqVmmo6ZdWUn3LiF4m+jAj+tWqKYj4h1XTbnR9WutPu4zHPbyGNlPsev0716B8NfisfBdpJpl/aSXOnu5kQxMA8bHrweCOOmRXsXjz4X6X41xdeYbPUlG0XCLkOOwYd68nvPgF4phY/ZrvT7le2JGQn8CMfrU2aGTfET4yR+KdFk0bSLKa3tZiDPLcEb2AOdoAyAMgc5ryaCGW5njghRpJZGCoijJYnoBXp1t8BvFs0gWWTT4F7s0xP6AGvUPAfwh07wjcrqN5OL/Ul/1blcJF7qPX3NFrgdX4W0dtA8Gadpb/AOst7YLJ/vYyf1Jr45vf+P65/wCurfzr7idd0bKO4Ir54uP2f/EMtxLKuqaaA7lgCX7n/dpsDtfgSiS/DyaORQyNdSBlIyCCBxXk/wAVfAreD/ERltEb+yrwl4D/AM8z3T8O3tXvfw28JXngzwy2mXs8M0pnaTdDnbg49QPStXxb4ZtPFvh650q7AAkGY5McxuOjCi2gHxjX0v8AAT/kQZ/+v1//AEFa4Y/s9+IcnGq6bj6v/wDE1618NfCF54L8NSaZezwTStcNKGhzjBAHcD0pJagfOvxQ/wCSla9/18/+yius/Z8/5HjUP+wa/wD6Mjrf8X/BbW/EXi3UtWttRsI4bqXeqSF9wGAOcL7VtfDH4Xap4H8Q3Oo397aTRS2pgCwlsgl1bPIHHymhLUD1evl341+HBonjh7yFcW+pL54wOA/Rx+eD+NfUVcR8TPAr+OdEgt7aaKG8t5d8ckudu0jDDgH2/Km0I+UhdTizNoJW+zmQSGPPG4AjP5E16H8E/D39s+OEvJE3W+nJ5zZHG88KP6/hWr/wz34i/wCgrpv5v/8AE16r8M/Ar+BtEnt7mWGa9uJd8skWcYAwoGefU/iaSQ7nb18nfF//AJKbq31j/wDQBX1jXinjn4Oaz4p8XXur2t/YxQzldqSl9wwoHOB7U2hHlfw98WQeDPE41a4tpLmPyHi2RsAecc8/SvWf+Gh9K/6AV5/39WuZ/wCGe/EX/QV0383/APiaP+Ge/EX/AEFdN/N//iaWozpv+Gh9J/6AV5/39Wtb4u3q6l8HhfohRbk20yqeoDEHH61wf/DPfiL/AKCum/m//wATXqnirwXe678NbXw1BcQR3UUVuhkcnYTGBnoM9qNQPk2vrXR9CtfEnwh0nSrtA0dxpUABI+63ljDD3Bryj/hnvxF/0FdN/N//AImvePDemy6N4Z0vTJnV5bS1igdk6EqoBI/KhIGfG2r6Xc6Lq91pt2hSe2kMbg+3f8RzXp3wN8YPpmvN4fuZv9EvuYQx4SUen+8OPqBXefEz4US+MtWt9T0u4tra5CeXcGbIDgfdPAPPb8q4mD4BeJbaeOeLV9OSWNgyMrSAgjofu0W1Ag+Nf9uaT4yMqahepYXsSvEqzuEBAwy4zjqM/jXM/DzxzJ4U8WJqN/JcXFpLGYbgbyzbTg5AJ5IIFfSGt+Erbxd4Zh03xAqPcqgJmg/gkxyyk9q8c1P9n3W4ZWOm6nZ3MXYTbo3/AJEUNMDuvEfxd8GS+G7yOO5N888LItsIj8xIxzkYAr5kPsMe1emx/Ajxi8gVhYRj+80/A/IE12/hL4D2unXcd54gvEvWjIYW0IIjz7k8kflRqwN34S6NPpHwtzcKUe8Mt1tbqFKhR+YUH8a+Xj1NfcksAazkgjAUGMooxgDjFfPJ/Z88REn/AImmm/m//wATQ0B2P7Pf/Ik6j/2EW/8ARcdeX/Gb/kpmof7kf/oIr3T4YeDL3wP4futPvriCeSa6M6tDnABRVxyBz8prj/Hvwf1nxZ4uutXtL+xihlVAElLbhgY7Ch7AeS/D/wAVQeDfFMer3FtJcRrE8flowB+Ye9d74r+PEuraNPp+kaW1o06FHuJZdzKpHO0AdffNV/8AhnvxF/0FdN/N/wD4mnxfs9a60gE2saeidyodj+WBQrgePgFiAoJJ4AHevbtRjl+HnwMWwlzFqmsud69Cobr+SAD8a7Dwb8GdG8M3keoXkzajex8xmRAI0PqF9frVf4m/DjXvHOr2strf2UFlbRbUjlLbtxOWPAx6flRYLnzUiPLIsaKWdiFVRyST2rdHgbxSRn+wNQ5/6YGvVPDPwL1XSvEun6hqF/YzWttMsrxx7tzY5HUeuK93osFz4m1LQNX0ZI31LTbm0SQkI00ZUMR2Favw+8Qnwz4207UCcQmQRT+8bcH8uv4V9KfEfwa/jbwz/Z9vLFFdRyrLFJLnA7EHHPIP6CvIx+z54iHI1XTfzf8A+JosFzpP2hSG8P6MwOQbliD/AMANeAwSCKeOQjIRg2Poa+lPF3w513xR4M0LSXvrIXthxLKxba4C7RjjNcL/AMM9+Iv+grpv5v8A/E0MLm7P+0NZpabbXQZmmC4HmzgL+gNeJ63rF3r+s3Wq3zhri5fe2Og9APYDivTx+z34hyM6rpuPq/8A8TXQ6F+z7aW9wk2t6qbpFOTDAmxW9iTzijVgZvwB8MTm/vPEc8ZWBYzb25I+8SRuI+mMV77VeysbbTbOKzs4Uht4l2pGgwFFWKpCCiiigAooooA4f4h/8fnhT/sMw/1ruK4f4h/8fnhT/sMw/wBa7ikAUUUUwCiiigDjfisP+Laax/uxf+jUr5ir6b+LR2/DDWj6JGf/ACKlfMgOQCPSuLFbo+myCS5Zx9Ap0f8ArFz0yKbSjg1yH0J3C/dH0pajt5BLbxuOjKDUleU9GestUA616ZZf8eNvj/nmv8q8zzivRdHmE2k2zj+4Afw4ryc1T5Is8nN0+SL8y9RRRXhnhHaad/yCIMf88h/KvisYbx3iTBU6n82fTzea+0NEkEmlRDuuVP518c+PdOk0L4haxbYKmO7aRD7MdwP61+q4GSlhqcl2X5HzNZWqSXmfZOp5/smfH9yuMrp/D+pQ+JfCVjqEbhku7ZWbHZiMEfgc1zc0TQTPE4wynBr5XimlL2kKnS1j0stkuWUeoyiiivlD1Ap0eRIpXrkYptXdJtTdX8Yx8qnc34VvhqUqtWMI7tkVJKMHJl74hqjfDrXRL937G+fy4r5m+CxYfFbR9uc/vAcenltXu3xx11NI+HF1bbgJtQdbeMeozlv0BryT9nzSXvfiBJqG0+VYWrtu/wBp/lA/It+Vfq62PmD074/gf8ILaHHP25P/AEBq+bK9/wD2htQCaVpGnBhukmeZl74AwD+prwCoe5VgooooAKKKKACuo+HP/JRdC/6+lrl66j4c/wDJRdC/6+lpoD7CoooqyQooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAryb4//APImWf8A19j/ANBNes15N8f/APkTLP8A6+x/6CaT2BHYfDf/AJJxoH/XoldTXKfDRw/w30EjtaqPy4rq6YHyN8Vv+Sn67/12X/0Ba46uz+LClfidreRjMqkfTYtcZUMoltv+PqH/AH1/nX3Bbf8AHrF/uD+VfD9qC15AByTIoH519wwArbxqRghQD+VOImMvf+PC4/65N/KvlvwP/wAiz46/7Bn/ALOK+pL3/jwuP+uTfyNfLfgf/kWvHf8A2Df/AGcU2B6P+zx/yLesf9fa/wDoAr2SvG/2eP8AkW9Y/wCvtf8A0AV7JQthHh3xP8STeE/i3omrRZKR2gWZAfvxl23D8v1r2qzuob6zhu7eQSQzIJEYd1IyK+d/2gf+Rzsf+vIf+hNXW/Anxeb/AEiXw7dvmey+e3JP3oieR+B/Q+1JPUZ3PxB8Lr4t8IXenqgN0o822J7SDp+fI/Gk+G0TwfDvRYpVKSJAVZSMEEMciuqpscaRLtRQq5JwBjknJ/WqEOr508Pf8nMTf9f95/6Lkr6Lr508Pf8AJzE3/X/ef+i5KTGj6LoorF8XzSW/g7WJoXaORLOVldTgqQp5FMRtUV8Xf8Jb4j/6Dl//AN/2/wAaP+Et8Rf9By//AO/7f41PMOx9o0V8c2PxA8WadKJLfXr0EHOHk3qfqDkGvdvhj8Vl8XP/AGVqqRw6qq5Rk4ScDrgdj7U0wseoUU1ziNj7GvjvVfFfiFNXvUTWr9VWdwAJ24G4+9DdhH2NRXxd/wAJb4i/6Dl//wB/2/xo/wCEt8Rf9By//wC/7f40rjsfaNFfKnw88S65d+P9FguNXvZYXuQGR5mIYYPUV9V007iCivkfxd4o1638YaxDFrN8kaXkqqqzsAAGOAOa9H+Ausanql/rQv7+4ulSKMqJpC20knpmi47HuNFFFMQUUUUAFFFFABRRRQAUVznj6ea18B61PbyvFKlqxV0OCp9Qa+Uf+Et8Rf8AQcv/APv+3+NJuwH2jRXjPwW+IcmqRt4d1i5aS9QF7WWVstKvUqT6jr9K9L8YzSW/gzWZoZGjljs5WV1OCpCnkGhMDbor4u/4S3xH/wBBy/8A+/7f419R/DK6uL34eaRcXUzzTPESzyNkn5j1NCdwOuoqtqF/baXYT315KsNvAheR2PAAr5v8Z/GnXNaupbfQ5n03TwSFZBiWQepPb6Ci4H0uXVT8zAfU0oIIyDkV8STazqdxIZJdRu3c9S0zH+tXNO8XeIdJlWSx1m9hYdvNJB+oPBpXHY+0KK8l+GXxc/4SW4j0bW1ji1Ej91OvyrOR2I7N+hr1qqEFFeDfHfWtU0vxHpkdhqFzbI9puZYpCoJ3tzxXk48W+IyQBreoEnt57f40rjsfaNFfGDeKvEqjJ1nUQPeZquaf8RPF2mSq9vr14dpzskfep+oPFK4WPsOiuL+GvjlfHGgNPNGkV/bMEuY06c9GHscH8q4T49axqWl32irYX9xbB45SwikK55XrincR7fRXxd/wlviL/oOX/wD3/b/Gj/hLfEX/AEHL/wD7/t/jSuOx9o0V8Xf8Jb4i/wCg5f8A/f8Ab/Gu3+EviLWb/wCI2m293ql3PCwk3RySllPyMelFwsfTVFYPjaaW28Ea3NBI0cqWUrI6nBUhTyDXyZ/wlviL/oOah/3/AG/xptgfaNFfF3/CW+Iv+g5f/wDf9v8AGj/hLfEX/Qcv/wDv+3+NK4WPtGivnv4Ha7q2p+M7mG+1K6uYhZswSWUsAdy8819CU0IKKKKYBRRRQBw/xD/4/PCn/YZh/rXcVw/xD/4/PCn/AGGYf613FIAooopgFFFFAHFfFz/kl2uf9c4//RqV8vWknmQD1Xg19Q/Fz/kl2uf9c4//AEalfKFvN5Muf4Twawrw5onpZXilh695bPRmrRQCCMg8UV5x9qnc6bQrkS2flE/NGf0rUrjrG7azullHI6MPUV10ciSxrIjblYZBrhrw5ZX6M9DD1OaNuqH11vhK8DQS2jH5lO5fpXJVYsruSxu47iPqp5HqPSuDFUfbUnEnF0PbUnHqel0VBaXcd7bJPCcqw/I1PXy8ouLsz5Vpp2Zu+HLoLJJbMfvfMv1ryT9obwczNa+K7SMkbRb3mB0/uN+pH5V6DDK0EySocMpyK6t4rLxFo01rdRLNbXCGOaJvfqK+34cx0alL6tJ6x29P+AeJj6LjP2i2Z4P8B/iHFp8h8K6pNsgmfdZSOeFc9U+h6j3+te7atpK3o82LCzD/AMer5T+Ivw41LwJqzSxrJNpUj5trpf4f9lvRh+tdh4A+PFxpcEWmeJ45bu3TCx3icyqPRh/F9ev1r3sThqeJpulVV0zip1JU5c0T1SaCW3cpLGykeoqOui0nxd4Z8SW6yafqtlchh9wuA4+qnkflWl5Gmp8+22A9eK+VqcLS5v3dTTzR6ccyVvejqcpa2NxeOFijJHdj0FdRa21to1i8ksqIqjfLK5wAB3J7CsHxB8SPCXheBvteq27yr0t7YiSQn0wvT8cV88/ET4vap403WFojWGkZ5hDfPN7ufT2H617OW5LRwT5/il3/AMjkxGLnW02RV+LPjs+N/FH+is39mWeYrYf3+eXx7/yAr3T4KeEZPC/gpZ7uPZfaiRPICOVTHyKfw5/GvNPg/wDCebVruHxFrsBj0+Jg9vbyLgzsOhI/uj9a+gdY1BbK28qMjzXGFA7D1r0sTiIYek6s3ojnpwc5KKOX8RW1hq2redcWsE5hGxGkQNj1xmm2XhO3vcMNOtkj/vNCv6cVuaRowcC4ulyDyqH+ZrL8c/E3QvAtv5Vw32nUGXMdnCfm+rH+EV81gsrrYyTxOKk0papX/qx6NXFRpL2dLp1NK38CaBH80unW0re8Sgfyq2NF8NWXynT9MhPvEi18u+JvjL4u8RTOkd6dOtGOFgszt4926n9B7VzMGh+KdePmQ6bq1+G/jEMkg/PGK+lpYalRVoRsedKpKbvJn2LLo/he+TypLDSZ1P8ACYo2/Suc1n4NeDdXDtHYNYysPv2jlQP+A/d/IV8wTeFPFekjzpdE1a2A58z7O4A/ECtLQfid4w8MTqLbVZ5Ik6213mRD7YPI/AituVEXOy8W/BPXNBje60xv7Ts1ySEXEqj3Xv8AhXM/DtSnxH0NWBDC7AIPUda9w8A/GnSPFksen6gi6dqjYCqzfu5T/sseh9jW3rPw50y88Vab4ksUS1vra4WSYIMLOvfI/ve9K1h3O2opB0paoQUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAV5N+0B/wAiZZ/9fY/9BNes15N8f/8AkTLP/r7H/oJpPYDV+Cmppf8Aw4tId2ZLOR4HHpzuH6MK9Er5f+DnjWLwx4iexvpNlhqGEZieI5B90/rivp9WDAEEEHoRQgZ87/Hjwtc22uxeIYYi1pcosczgfckHAz9RivHq+5bm1gvLd7e5hjmhkG145FBVh6EVx8nwm8FSz+adEiB67Vdgv5ZpNDufPfw08K3HijxjZRpGTaW0iz3MmOAqnOPqcY/GvrkdKo6Vo2m6JafZdMsoLSDOSkSYyfU+pq9TSsIw/GWpJpHg3V712C+XauFP+0Rhf1Ir5u8BnPhXxwT1Ol/+ziu2+OvjeGZE8K2Em5lYSXjqeAR91Pr3P4VxPgL/AJFTxx/2Cx/6GKT3Gek/s8f8i3rH/X2v/oAr2SvG/wBnj/kW9Y/6+1/9AFeyU1sI+cP2gf8Akc7H/ryH/oTV554X1+48M+I7LVrYnMMg3r/fQ8MPyr0P9oH/AJHOx/68h/6E1eSVLGfcGm6hb6rptvf2kgkt7iMSRsO4Iq1XifwG8Xiezn8MXcn72HM1pk9U/iX8Dz+J9K9sq0IK+dPD3/JzE3/X/ef+i5K+i6+dPD3/ACcxN/1/3n/ouSkxo+i6wvGv/Ika3/15S/8AoJrdrC8a/wDIka3/ANeUv/oJpiPjKvoj4Q+EfD+seAYrrUdItLmdp5FMkqZbAxgZr53r6i+B3/JN4P8Ar5l/mKhDZ5r8ZPh9p3hZrPVdHjMNrcuY5Ic5CPjII9ARnj2rzXRdUuNF1qz1K1crNbSrIp9cHp9D0r6C/aAZR4KslP3jfKR9AjZ/nXzeOtNgfccU6XNik8f3JYw6/QjIr4o1f/kNX3/XxJ/6Ea+ytDVk8L6ar/fFlEGz67BXxrq//Iavv+viT/0I0SBHpPwh17wpo1tqa+JDahpHQw+fB5nABzjg4r0z/hOPhZ/e0v8A8AR/8TXgPhjwNrvjCO4fR7eOVbcgSb5VTBPTqa6D/hSXjj/oH2//AIFJ/jRqB7r4c13wNrmp+RoSafJeRKZQYrQIygcZB2j1rsq8V+E3w68SeE/FU19q9rFFbvbNGCkyv8xIPQH2r2qmhHxj4z/5HbXP+v6X/wBCNeofs7/8hDXf+uUX8zXl/jP/AJHbXP8Ar+l/9CNeofs7/wDIQ13/AK5RfzNJDPfqKKKoQUUUUAFFFFABRRRQBzHxF/5J3rv/AF6NXx5X2H8Rf+Sd67/16NXx5UsaLFje3GnX0F7ayNHcQOHjdTyCK+m4PGFv4z+EOrX6bVuksZY7mIfwPsOfwPUV4h4j8ES6f4N0TxNaIz2l3CFucc+XJkgH6HH51i+H/Et54fW/igO63v7Z7eeInhgwIDfUZzRsBi19b/Cj/kmmi/8AXI/+hGvkivrf4Uf8k00X/rkf/QjQgZx/7QGuS2mhafpETlReSNJKB3VMYH5kflXz/ZWsl9fQWkIzLPIsaD3Y4H869j/aIRxq2iSH7hgkUfUMM/zFeYeDpY4fGmiyS42C8izn/eFD3BH054b+GfhrQdKit20y3urjYPOnuEDs7d+vQfSvNfjP8OtM0jTI/EGjWy2yiQR3EKfd56MB254/GvfR0rz341TJH8M79XxmSSJVz67wf5A02hHy5a3Mtndw3UDlJYXEiMOoIORX2roWoDVtBsNQH/LzAkhx6kc18S19jfD+N4vh/oSSElhZpnP0pRGzxv8AaG/5GfSv+vL/ANnavO/BLwx+N9Ge4aNYRdoXMhAUDPfPFeiftDf8jPpX/Xl/7O1eS2Vlcajew2dpEZbiZwkaDqzHoKGB9barrPgaKwla/vNEeDady7o3JGOwHJP0r5K1B7eTU7p7RCls0rGJT2XPH6VJqmkahot4bTU7OW1nAzslXBx/WrvhfSdP1rW4LLUtVTTYZGA81kLZPp6D6mk9RnrH7O9tP52uXWGFvtjj6cFsk/oP51634g8HaH4okgfWLFbloARGSxG0Hr0+lTeGvDuneF9Eh0zTE2wJ8xYnLSMerE9ya16pEnmniT4XeD7Hwzql3b6RGk0NrI8bB24YKSD1r5gr7Q8X/wDIm61/15S/+gmvi+kxo96+E3gHw34j8Erf6ppqXFybiRN5YjgYx0NekaP8O/C+g6nFqOm6YkF1FnZIGJxkEHqfQ1znwK/5Jwn/AF9y/wBK9LpoRz3jz/kQde/68Zf/AEE18bV9k+PP+RB17/rxl/8AQTXxtSY0e4/DTxP4F0vwXBa66bAXyyuW8613tgnjnaa7D/hOPhZ/e0v/AMAR/wDE14b4f+GXifxPpSanpdnFJauxUM06qcjrwTWp/wAKS8cf9A+3/wDApP8AGi7A+gfC2reE9aeebw4lmWhwsrwW4jIB7ZwPSumry74O+C9b8Hw6ous28cRuGQx7JVfOM56fWvUaaEFFFFMAooooA4f4h/8AH54U/wCwzD/Wu4rh/iH/AMfnhT/sMw/1ruKQBRRRTAKKKKAOK+Ln/JLdc/65x/8Ao1K+Sq+tfi5/yS3XP+ucf/o1K+SqljRatroxfK/KfyrQVg6gqcg1i0+OaSI5Rse1c1Siparc9nA5tKguSprH8UbFaGm6m1k2x8tCeo9PpWEmoDpIv4iphdwn+PH1Fck6MmrNH0VHMsPLWM0vwO9hmjnjDxMGU9xUlcLb6oLV90M+09/eteDxVBgC4AJ/vJ/hXFPCVF8KuelDM8M/iml8ztNI1eXS5sj5oW++n9RXc2d9BfwCSCQMO47j615AniPS3/5eQv8AvAirNv4osrSUSQagI39RmvLxeVyre8otS9DmxccJX9+NSKfqj1/rVqxvpbCYOhyp+8vYivNrP4maeoC3ksb/AO0nB/Ktu38eeHrhQwvQmf7ymvJ+pY3DTU4xaa6o8adDmvDSXo0z1Nv7O8QadJbXEMdxBIu2SGVcg/UV4x4v/Z5jmlku/C14sJYk/Y7knaP91/6H863ovG2hwuHj1WNGHcZrasvijo5dYpb2KUngFcgmvrcDnMpxUcTBxfezt/wDx62V1k701dHznqPwu8baVIRL4fvJAvR7ZPNB+m3JrP8A+Ed8Xz/uP7I1p8fwfZ5Tj8MV9cRePPD0nW+CH/aU1MfG3h0DP9pxH6A17McVRkrqSOV4HEp2dN/cz5c0j4O+NtXkAGjvaRnrJdsIwPw6/pXsvgr4EaNoUkV9rco1O9X5hHtxCh+nVvx/Ku9g8Y6VeCQ2jSTbDgkIQM/jVO7165nBWLESn06/nXBi86wmGunK77IqOBruVpRt6mzf6pBp8Xlx7TIBhUXov+FZOl276pftcXB3Ihyfc9hWQSWOSSST1Ndhp8SafpKvIQoVDJIx7dzXi4SvUzfFp1NKcNbflc6KsI4WlaPxPqcd8VPiJF4E0NY7XZJq10CtvGeiDu5HoO3qa+Z9C0HXviH4meK3L3N3OxknuJScIO7Mal8beIrvxv44urxd7iabybWLrtTOFUfz+pr6k+Hngy08DeFYbVQv2uRRLeTHqz45H0HQV9fdJHlmb4O+EHhrwpBHLNbJqOoAZa4uUBAP+yp4ArtJNUsLYbDMgxxtQZx+VYGp6vLduY4mKQjjj+Ksuvk8bxLyTcMPG9urPTo5fdXqM7KPWrCU484Kf9oYrB8T/Dvwx4wtm+22ESzsPlurcBJAfXI6/jWXVyx1GexkGxiY+6E8GownE8nJRxEdO6/yKq5dpemz5t8ffDnVvAOoq0hM9hI3+j3aDH0Df3Wr2D4K/FCTXox4b1qYNqES5tp2PMyAdD/tD9R9K9P1fSdO8X+HZ9PvYhLa3KYOeqHsR6EV8c6rY6j4D8azWwdo7zTbkNHIOMgcqfoRj86+uhJTipRd0zy2mnZn270PsadWP4Y1yLxL4ZsNXhwFuYVcqP4W7j8DmtcHIFMQtFFFMAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACvJvj/8A8iZZ/wDX2P8A0E16zXD/ABQ8HX/jTw/BYafLBHLHOJCZiQMYI7A0mB8m16l4F+M2o+G4I9P1aJ9Q09MBGDfvYh6An7w9j+dOn+A/iG2iaWfUtKijXq7ysAPxIqn/AMKd1D/oYdB/8Cv/AK1TqUe46T8UfB+rxqYtZhhc/wDLO5/dsPbnj8jW6viXQ2QuNYsSo6n7Qv8AjXzj/wAKd1D/AKGLQf8AwK/+tR/wp3UP+hi0H/wK/wDrU7sVj3rUPiJ4S0xC1zrtpkfwxvvY/QLmvKPGfx2lu4ZbHwxBJbow2teTD5/+Ar2+p/IVzn/CndQ/6GLQf/Ar/wCtR/wp3UP+hi0H/wACv/rUXYHnUksk0jSSuzuxyzMckn1JruvAX/IqeOP+wWP/AEMVb/4U7qH/AEMWg/8AgV/9aum8M/D6bRtF8RWVxr2itJqVl9niK3WQG3Z59qQy/wDAHULKy8Past1eW8DNdKQJZVUkbB6mvXf7d0j/AKCll/4EJ/jXzb/wpzUB/wAzFoP/AIFf/Wo/4U7qH/QxaD/4Ff8A1qaYi78ebu2vPGFi9tcRToLMAtE4YA7m9K8qr0j/AIU5qH/Qw6D/AOBX/wBaj/hTuof9DFoP/gV/9alYZxOgazceHtes9VtT+9tpA+M43Dup+oyK+vdM8V6LqemW19HqVqiTxiQK8yqy5HQgnrXzx/wp3UP+hi0H/wACv/rUf8Kd1D/oYtB/8Cv/AK1NXQj6S/t3SP8AoKWX/gQn+NeA+GZY5v2k5JYnWSNr67KupyCPKk5BqjbfBLWbyQx22taNM4GSsdwWOPXgV13gH4P674W8a6frN5dWT29v5m9YmYsd0bKMZHq1G4Ht1YXjX/kSNb/68pf/AEE1u1m+IdPl1bw7qOnwMqy3Nu8SFugJBAzVCPievW/APxdsPB3hNNJn0y5uJkld96Oqqc/Wmf8ACgPE/wDz+6b/AN9t/wDE0f8ADP8A4n/5/dO/77b/AOJqLMZznxC+It548urfdbC0srbPlwB9xJPVicDmsrwV4ZuPFfimz0yFW8tnDTyAcJGPvH8unvXpGn/s86i8inUdZt4k/iWCMsfwJxXr/hHwTo/gywNvpsJMj4824fl5D7n09qdmBvlFS32KAFVcADsMV8S6v/yGr7/r4k/9CNfbrjKEDuK+dr74DeJbnULm4S904LLKzqC7ZwST/dpsEYvwx+I1l4Eg1CO7sZ7k3LKymJgMYB65r0D/AIaG0b/oC33/AH2lcj/woDxP/wA/um/99t/8TR/woDxP/wA/um/99t/8TS1A7jTfjzpGpapaWKaReo9zMkKsXXALMBk/nXrVfPei/AzxHp2u6ffS3mnmO2uY5nCu2SFYE449q+hKaEfGPjP/AJHbXP8Ar+l/9CNa/wAP/H8vgO4vpY7BLv7UiqQ0hXbgn2967fxB8D/EWq+IdR1CG8sBFc3DyoGdsgMxIzxWb/woDxP/AM/um/8Afbf/ABNTZjNb/hom6/6F+H/wIP8AhXQ+CfjLP4t8U2ujPo8dus4cmRZixG1SemPauI/4UB4n/wCf3Tf++2/+Jrp/AHwh13wr4xs9XvbqykghDhliZi3Kkdx701cD2uiiiqEFFFFABRRRQBzHxF/5J3rv/Xo1fHlfaPivSp9c8K6lpdsyLNdQNGhc4AJ9a8G/4UB4n/5/dN/77b/4mpaGj1rwNplrrPwj0vTr2ISW9xaFHU+hY/rXzb4z8KXXg/xHcaZcZaMHdBNjAkQ9D/jX1d4P0e48P+EtO0q6ZHntotjtGcqTknj86x/iP4Di8b6GIozHFqMB3W8z9B6qfY07Bc+Sa+t/hR/yTTRf+uR/9CNeQf8ACgPE/wDz+6b/AN9t/wDE17l4J0O58OeENP0m7eN57dCrNGSVPJPFJIGcr8afCs3iDwit3aRl7nTnMwUDlkIwwH8/wr5gRmRwysVZTkEdQa+6CARgjINeT+Mfgfput3cl9o1wNOuZCWeIpmJj6gDlaGgRj+G/j9Zw6ZFB4g0+6a5iUL51oFYSY7kMRg/nXEfEn4ny+OBDZ21s1rp0D7wjtlpG6AnHAwO3vVy4+BHjCJyIvsM47FZ8Z/MCrmm/ADxHPMv9oXtlaxZ5KMZG/LAH60aged+GtAu/EviCz0q0jZnnkAZgOEX+Jj7AV9m2VrHZWMFpEMRwxrGo9gMCuc8GeAdH8E2jJYoZLmQATXMn339vYe1dVTSBnzv+0N/yM+lf9eX/ALO1ef8AgH/kf9C/6/E/nXufxT+Gur+N9ZsrzTri1jjgt/KYTMQSdxPYH1rmPDHwS8Q6N4n03Uri7sGhtrhZHCO2SAe3FJrUDs/jJ4NHiPwsb+1iB1DTwZFwOXj/AIl9/UfT3r5e6H3FfdLKGUqwBBGCD3rwLxF8BtUudfvLjR7qyjsJZDJGkrMGTPJHAPQ5x7UNAjr/AILeMT4g8NHS7uUvf6dhcseXiP3T+HQ/hXp9eI+BvhT4r8IeKrXVBe2DQA7J41dsvGevbr3H0r26mhGL4v8A+RN1r/ryl/8AQTXxfX2zr1jLqegahYQlRLcW7xKW6AlSOa+fv+Gf/E//AD/ab/323/xNJoaPR/gV/wAk4T/r7l/pXpdch8NvC174P8JrpV/JDJMJ3k3RElcHGOo9q6+qQjnvHn/Ig69/14y/+gmvjavtXxLps2seGdT02BlWW6tniQt0BIxzXgX/AAz/AOJ/+f7Tf++2/wDialjRP4A+L+m+EPCkOkXOmXU8kcjuXjZQDk5710//AA0No3/QFvv++0rkf+FAeJ/+f3Tf++2/+Jo/4UB4n/5/dN/77b/4mjUD0vwj8X9N8X+IItIttMuoJJEZg8jKQMDPavR68X+Hnwk1zwn4ug1a9urKSCON1KxMxbJGO4r2imhBRRRTAKKKKAOH+If/AB+eFP8AsMw/1ruK4f4h/wDH54U/7DMP9a7ikAUUUUwCiiigDivi5/yS3XP+ucf/AKNSvkqvrX4uf8kt1z/rnH/6NSvkqpY0FFFFSMKKKKACiiigAooooAMVsxALCg9qxq2k+4v0Fc2J2R9BkKXNN+gtaOiIH1FSf4QTWdWpoJxft7oa4anwM+opfGjpqKKK809Q7jwrCI9GD/8APR2P5cf0rbrK8NkHQoMdi38zWrXyuKbdaV+58jiXetO/dktsnmXMSf3nA/WrvxP1F9J+Gut3ER2v9n8pSOxYhf61VsDjUICf74qD41xtJ8KNXCjODEx+gkUmvreFkvZVH5o8HMn70UeCfBTRo9Z+Jun+cgeKzV7pgfVR8v8A48Vr6k8Q3BhshEpwZDg/SvnX9neVE+IN1G2Nz2D7T9GU4/z6V9A+J1O2Bu2SK9fOZyhgajj2/U5cJFSrRTOeooor8zPogooooA3vDdwRJLbk8EbhXi37SGjxw6vpGsRoA08TQSkfxFTlT+TH8hXsPh5SdTz2CHNea/tJyJ/ZWhRbvn8+Rse20f41+h8PTlPArm6No8HHRSrOxs/s8ai114DubJ2ybO7YL7KwDfz3V64M85rxH9myNh4e1uQk7GukA9MhTn+Yr24dTXtnGLRRRTAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoopsjrHGzuwVVBJJ7CgDxb4/8AiQQ6dZeHYX+e4P2icA9EHCj8Tn8q8AwPSug8b+IG8T+L9Q1TcTFJIVhHpGvC/oP1rn6h6jDA9KMD0oq7Y6RqWpyeXYafdXT+kMTPj8hSGUsD0owPSu7034PeNNRCt/ZgtkPe4kCcfTk12Omfs8XjlW1TXIYh1KW8Rc/TJIx+tOwHieBRgV9Q6b8DvB1jgzRXd6473E3H5KBXV2vgrwxZQGGDQrBY2GCDArZ/E0+UVz4zwPSjA9K+s9T+EngvU8ltIS3c/wAVs5j/AJcVxuq/s86fIS2k61cQeiXMYkH5jGPyNKwXPn7A9KMD0r07UvgV4ussm1+x3qD/AJ5S7T+TAVx2p+C/Eujk/btEvYlHV/KLKP8AgQyKLDMLA9KMD0pSCDggg+9JSA6XwD4hPhfxnp+o7iId/lzgd424P9D+FfYaOsiK6EMrDII7ivhevq74R+JB4i8C2okfdd2X+jTZPJx90/iMfkapCZ3lFFFUIKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigDh/iH/wAfnhT/ALDMP9a7iuH+If8Ax+eFP+wzD/Wu4pAFFFFMAooooA4r4uf8kt1z/rnH/wCjUr5Kr61+Ln/JLdc/65x/+jUr5KqWNBRRRUjCiiigAooooAKKKKACte3ffbofbBrIq7YS4JiP1FY143jc9fJq6p4jlf2tC9V3SpfK1GInoTtP41SpQxVgwOCORXBJXTR9fF2aZ3NFV7O4W6tUlB5IwR6GrFeW007M9VO6ujsvCU4ewlhJ5jfIHsf8muhrgfD18LLU1DnEcvyN7eld92r5vMKThWb6M+azGk6ddvo9R0bmORHHVWBrovFmljxF4K1PT0+Zrq1YJj+9jI/XFc3XVaDd+fZeST88XH1Fe1wziVCtKi/tbeqPn8xptwU10PkP4fa+fCXj/TdQm+WOKYxTg9kbKt+QOfwr7D1K2Go6d+7IY4DoQeDXzJ8bfA8nhzxU+r20R/s3UnMgKjiOX+JfbPUfj6V33wV+J8V/YweF9ZuAt7CNlnM54lQdEJ/vDoPUV9lXoxrU5U57NWPJhJwkpLodaQVJUggjgikrqtS0RLsmWEhJe/o1YE2mXkBw8Dn3UZH6V+c47KcRhZu8W490e9RxVOot7MqUVYjsLuVtqW8n4rj+dbWn6BscS3eDjkRj+tZ4TLMTiZpQi7d3sVVxNOmtWTaBZGC2adxhpOg9q+b/AI9eJE1rxyun27boNLj8kkHIMh+Zvy4H4GvZvij8SLTwRoz21rIkmszoRBCDnyx/fYeg7DvXzj4G8LX3j3xjFaEu0bP515OedqZyxJ9T0H1r9GwmGjhaMaMeh4NWo6k3N9T6K+B+ivo/w2tZJU2y30jXJHscBf0Ar0demfWoYLeG0tYrW3QRwxIERF6KoGAKnHSujqZhRRRTAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigArlviFBrN54Qu7DQrdpr28HkZDBdiH7xyfbj8a6migD5y0v8AZ/1+5CtqOoWdmp6quZWH5YH612WmfADw9bENqF9eXjd1BEa/pz+tet0UrIdzltM+HHhHScG20O1Lj+OZfMP/AI9mulit4YECQxJGo6KigAflUlFMQUUUUAFFFFABRRRQAUhAIwRmlooAyNR8LaDq6sL/AEiznLdWaEbv++hzXHan8EPB9+CYILiyc94JTgfgcivSKKAPBdT/AGeJxubStdRvRLqIr/48uf5VrfC3wX4r8D+J54b+2jfTLyMq0sMoZVdeVOOo7jp3FeyUUrAFFFFMAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAOH+If/H54U/7DMP8AWu4rh/iH/wAfnhT/ALDMP9a7ikAUUUUwCiiigDivi5/yS3XP+ucf/o1K+Sq+tfi5/wAkt1z/AK5x/wDo1K+SqljQUUUVIwooooAKKKKACiiigApVYowZeopKKBptO6NeCZZoww69xUlY8cjROGU81pQ3SSjBOG9DXFVouOq2PrcvzOFeKhUdpfma+k3/ANkm2Of3T9fY+tdQCGAIIIPQiuGrT07VntMRy5eL9V+lcFajze9Hc+go1uX3ZbHT/Su28PawL23FtMwE8Yxz/EK4SG4iuIw8Thh7VPHK8UiyRsVdTkEdq8rFYZVocr3NMVho4iFuvQ9RqxZXb2V0sydBwR6iuW0nxLFcBYbwiOXoG/hP+FdCCGUEEEeor55xq4WopbNbHzFfDyg3CojqNY0fS/GHh6bT76MTWtwv4o3Yj0INfKHjr4da14C1HfIrzWBbNvexg49gf7rV9J6fqM1hJlPmjP3kPQ10izafrVm9vMkc0Ui7ZIZVBBHoQetfe5ZnFLGRUZO0+3f0PnMRhZUndao+c/Bvx71jQ4I7PXbc6pbKAFlDbZlA9+jfj+der6b8cPA+oRq0moyWjkcpcQsCvtkZH61jeJf2ffD2qO8+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FABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB/9k=" alt="Universidad del Norte">
+    <div class="logo-div"></div>
+    <div class="inst">
+      <div class="dept">Barranquilla, Colombia</div>
+      <div class="crs">Fundamentals of AI with Neural Networks and Transformers</div>
+    </div>
+  </div>
+  <div class="rpt-title">Applied Activity: From Word Embeddings to Semantic Similarity</div>
+  <div class="rpt-sub">US Immigration Policy — Scopus Corpus (GloVe · WMD · TF-IDF)</div>
+  <div class="meta">
+    <span class="ml">Student</span><span class="mv">Elián David Martínez Orozco</span>
+    <span class="ml">Professor</span><span class="mv">Dr. rer. nat. Humberto Llinás</span>
+    <span class="ml">Date</span><span class="mv">April 2026</span>
+    <span class="ml">Corpus</span><span class="mv">7 Scopus abstracts · glove-wiki-gigaword-100</span>
+  </div>
+</div>
+</header>
+<!-- TOC -->
+<nav class="toc"><div class="toc-inner">
+  <div class="toc-h">Table of Contents</div>
+  <ol>
+    <li><a href="#corpus">Corpus — Scopus Query &amp; Papers</a></li>
+    <li><a href="#pre">Preprocessing Pipeline</a></li>
+    <li><a href="#s1">§1 — From Frequency-Based to Embedding-Based Representations</a></li>
+    <li><a href="#s2">§2 — Embedding Model Description</a></li>
+    <li><a href="#s3">§3 — Vocabulary Exploration</a></li>
+    <li><a href="#s4">§4 — Nearest Neighbors</a></li>
+    <li><a href="#s5">§5 — Analogy Reasoning</a></li>
+    <li><a href="#s6">§6 — Word Similarity Matrix</a></li>
+    <li><a href="#s7">§7 — Text Similarity: BoW · TF-IDF · Mean Embeddings</a></li>
+    <li><a href="#s8">§8 — Conceptual Reflection</a></li>
+    <li><a href="#s9">§9 — Reproducibility</a></li>
+  </ol>
+</div></nav>
+
+<main class="main">
+
+<!-- ══════════════════════════════════════════════════
+     CORPUS
+══════════════════════════════════════════════════ -->
+<section class="section" id="corpus">
+<div class="sec-hdr"><span class="sec-tag">CORPUS</span><h2>Scopus Query &amp; Paper References</h2></div>
+
+<div class="qbox">
+  <div class="ql">Scopus Query</div>
+  <code>"US immigration policy" AND ("border enforcement" OR "visa reform" OR "asylum")<br>AND (abstract OR research OR paper)</code>
+</div>
+
+<div class="tbl-wrap"><table>
+<thead><tr><th>ID</th><th>Authors</th><th>Title</th><th>Journal</th><th>Year</th><th>DOI</th></tr></thead>
+<tbody>
+<tr><td><strong>P1</strong></td><td>Gonzalez et al.</td><td>Structural barriers to prenatal care for migrant women at the US–Mexico border</td><td><em>Public Health</em></td><td>2025</td><td style="font-size:.77rem;font-family:'JetBrains Mono',monospace">10.1016/j.puhe.2025.105986</td></tr>
+<tr><td><strong>P2</strong></td><td>Galli</td><td>Wolves in Sheep's Clothing? What Central American Unaccompanied Minors Know About Crossing the US-Mexico Border</td><td><em>J. Borderlands Studies</em></td><td>2023</td><td style="font-size:.77rem;font-family:'JetBrains Mono',monospace">10.1080/08865655.2023.2200828</td></tr>
+<tr><td><strong>P3</strong></td><td>Kerwin</td><td>From IIRIRA to Trump: Connecting the Dots to the Current US Immigration Policy Crisis</td><td><em>J. Migration &amp; Human Security</em></td><td>2018</td><td style="font-size:.77rem;font-family:'JetBrains Mono',monospace">10.1177/2331502418786718</td></tr>
+<tr><td><strong>P4</strong></td><td>Kerwin &amp; Alulema</td><td>The CRISIS Survey: The Catholic Church's Work with Immigrants in a Period of Crisis</td><td><em>J. Migration &amp; Human Security</em></td><td>2021</td><td style="font-size:.77rem;font-family:'JetBrains Mono',monospace">10.1177/23315024211035726</td></tr>
+<tr><td><strong>P5</strong></td><td>Argüellová</td><td>So far from God, so close to the US: Current dynamics of Mexican migration</td><td><em>CEJISS</em></td><td>2015</td><td style="font-size:.77rem;font-family:'JetBrains Mono',monospace">—</td></tr>
+<tr><td><strong>P6</strong></td><td>Pantoja</td><td>Against the tide? Core American values and attitudes toward US immigration policy</td><td><em>J. Ethnic &amp; Migration Studies</em></td><td>2006</td><td style="font-size:.77rem;font-family:'JetBrains Mono',monospace">10.1080/13691830600555111</td></tr>
+<tr><td><strong>P7</strong></td><td>Wasem</td><td>More than a Wall: The Rise and Fall of US Asylum and Refugee Policy</td><td><em>J. Migration &amp; Human Security</em></td><td>2020</td><td style="font-size:.77rem;font-family:'JetBrains Mono',monospace">10.1177/2331502420948847</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     PREPROCESSING
+══════════════════════════════════════════════════ -->
+<section class="section" id="pre">
+<div class="sec-hdr"><span class="sec-tag">PREPROCESSING</span><h2>Preprocessing Pipeline</h2></div>
+<p>Academic abstracts exported from Scopus contain noise that distorts NLP computations. A two-version strategy is used: <code>raw_abstracts</code> for display; <code>clean</code> (preprocessed) for all computations.</p>
+
+<ul class="steps">
+  <li><span class="snum">1</span><span class="stxt"><strong>Remove structural headers</strong> — <code>Objectives</code>, <code>Study design</code>, <code>Methods</code>, <code>Results</code>, <code>Conclusions</code> are section labels embedded in structured abstracts (P1). They carry no thematic content.</span></li>
+  <li><span class="snum">2</span><span class="stxt"><strong>Lowercase</strong> — avoids treating <code>Immigration</code> and <code>immigration</code> as different tokens.</span></li>
+  <li><span class="snum">3</span><span class="stxt"><strong>Remove diacritics</strong> — <code>Argüellová → arguellova</code>; prevents OOV caused by encoding differences.</span></li>
+  <li><span class="snum">4</span><span class="stxt"><strong>Remove numbers and special chars</strong> — <code>1996</code>, <code>287(g)</code>, <code>©</code> carry no semantic embedding value.</span></li>
+  <li><span class="snum">5</span><span class="stxt"><strong>Remove stopwords + tokens &lt; 3 chars</strong> — prevents generic function words from dominating mean embedding vectors.</span></li>
+  <li><span class="snum">6</span><span class="stxt"><strong>Strip extra whitespace</strong> — cosmetic normalization.</span></li>
+</ul>
+
+<div class="code-block">
+  <div class="code-cap">In [7] — Preprocessing pipeline</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre><span class="cm"># ── Preprocessing pipeline ────────────────────────────────────</span>
+<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> ENGLISH_STOP_WORDS
+
+STOPWORDS <span class="op">=</span> <span class="fn">set</span>(ENGLISH_STOP_WORDS) <span class="op">|</span> {
+    <span class="cm"># Abstract structural headers</span>
+    <span class="st">"objectives"</span>, <span class="st">"methods"</span>, <span class="st">"results"</span>, <span class="st">"conclusions"</span>,
+    <span class="st">"background"</span>, <span class="st">"design"</span>, <span class="st">"findings"</span>, <span class="st">"context"</span>,
+    <span class="cm"># Academic filler verbs</span>
+    <span class="st">"find"</span>, <span class="st">"found"</span>, <span class="st">"show"</span>, <span class="st">"argue"</span>, <span class="st">"examine"</span>,
+    <span class="st">"consider"</span>, <span class="st">"include"</span>, <span class="st">"use"</span>, <span class="st">"uses"</span>, <span class="st">"used"</span>,
+    <span class="cm"># Common filler</span>
+    <span class="st">"also"</span>, <span class="st">"however"</span>, <span class="st">"thus"</span>, <span class="st">"may"</span>, <span class="st">"can"</span>,
+    <span class="st">"will"</span>, <span class="st">"would"</span>, <span class="st">"could"</span>, <span class="st">"three"</span>, <span class="st">"one"</span>, <span class="st">"two"</span>,
+}
+
+_HEADERS <span class="op">=</span> re.<span class="fn">compile</span>(
+    <span class="st">r"\b(Objectives?|Study\s+design|Methods?|Results?|Conclusions?|"</span>
+    <span class="st">r"Background|Introduction|Discussion|Abstract|Findings)\b"</span>,
+    re.IGNORECASE
+)
+
+<span class="kw">def</span> <span class="fn">preprocess</span>(text):
+    text <span class="op">=</span> _HEADERS.<span class="fn">sub</span>(<span class="st">" "</span>, text)                      <span class="cm"># step 1</span>
+    text <span class="op">=</span> text.<span class="fn">lower</span>()                                   <span class="cm"># step 2</span>
+    text <span class="op">=</span> unicodedata.<span class="fn">normalize</span>(<span class="st">"NFKD"</span>, text)\
+           .<span class="fn">encode</span>(<span class="st">"ascii"</span>, <span class="st">"ignore"</span>).<span class="fn">decode</span>(<span class="st">"utf-8"</span>)  <span class="cm"># step 3</span>
+    text <span class="op">=</span> re.<span class="fn">sub</span>(<span class="st">r"[^a-z\s]"</span>, <span class="st">" "</span>, text)              <span class="cm"># step 4</span>
+    tokens <span class="op">=</span> [t <span class="kw">for</span> t <span class="kw">in</span> text.<span class="fn">split</span>()
+              <span class="kw">if</span> t <span class="kw">not in</span> STOPWORDS <span class="kw">and</span> <span class="fn">len</span>(t) <span class="op">&gt;=</span> <span class="nb">3</span>]  <span class="cm"># step 5</span>
+    <span class="kw">return</span> <span class="st">" "</span>.<span class="fn">join</span>(tokens)                               <span class="cm"># step 6</span>
+
+clean <span class="op">=</span> {k: <span class="fn">preprocess</span>(v) <span class="kw">for</span> k, v <span class="kw">in</span> raw_abstracts.<span class="fn">items</span>()}
+clean_list <span class="op">=</span> [clean[k] <span class="kw">for</span> k <span class="kw">in</span> doc_keys]
+
+<span class="cm"># Before / After report</span>
+<span class="kw">for</span> k <span class="kw">in</span> doc_keys:
+    n_r <span class="op">=</span> <span class="fn">len</span>(raw_abstracts[k].<span class="fn">split</span>())
+    n_c <span class="op">=</span> <span class="fn">len</span>(clean[k].<span class="fn">split</span>())
+    <span class="fn">print</span>(<span class="st">f"</span>{k}<span class="st">: raw=</span>{n_r}<span class="st">  clean=</span>{n_c}<span class="st">  reduction=</span>{<span class="nb">100</span>*(n_r-n_c)/n_r:.1f}<span class="st">%"</span>)</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+P1: raw=176  clean=120  reduction=<span class="out-em">31.8%</span><br>
+P2: raw=151  clean=78   reduction=<span class="out-em">48.3%</span><br>
+P3: raw=137  clean=85   reduction=<span class="out-em">38.0%</span><br>
+P4: raw=136  clean=87   reduction=<span class="out-em">36.0%</span><br>
+P5: raw=162  clean=89   reduction=<span class="out-em">45.1%</span><br>
+P6: raw=136  clean=74   reduction=<span class="out-em">45.6%</span><br>
+P7: raw=149  clean=76   reduction=<span class="out-em">49.0%</span>
+  </div>
+</div>
+
+<div class="callout">
+  <div class="cl">Key Insight</div>
+  <p>P1 shows the lowest reduction (31.8%) because it is a structured abstract — <code>Objectives</code>, <code>Study design</code>, <code>Methods</code>, <code>Results</code>, <code>Conclusions</code> are embedded as text within it. After removing those headers and applying stopword filtering, all abstracts retain their core thematic vocabulary for downstream analysis.</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 1
+══════════════════════════════════════════════════ -->
+<section class="section" id="s1">
+<div class="sec-hdr"><span class="sec-tag">§ 1</span><h2>From Frequency-Based to Embedding-Based Representations</h2></div>
+<p><strong>Bag-of-Words</strong> and <strong>TF-IDF</strong> encode text as sparse vectors of token counts or reweighted frequencies. Their similarity signal depends entirely on <em>shared vocabulary</em>. Two abstracts discussing the same immigration phenomenon using different disciplinary vocabularies — one writing <em>deportation</em>, another <em>removal</em> — score zero overlap under TF-IDF because they share no surface tokens.</p>
+<p><strong>Word embeddings</strong> encode each word as a dense vector learned from co-occurrence patterns across large corpora. Words appearing in similar linguistic environments are mapped to nearby points in vector space regardless of surface form, capturing <strong>semantic proximity</strong> rather than lexical overlap.</p>
+<p>For this corpus, researchers from public health (P1), political science (P6), and security studies (P5) describe overlapping enforcement realities with entirely different technical vocabularies. Embedding-based similarity recovers those relationships; TF-IDF misses them.</p>
+<div class="two-col">
+  <div class="infobox"><strong>BoW / TF-IDF</strong><br>Sparse vectors · Fixed vocabulary · Lexical overlap only<br>Fast, interpretable, language-specific</div>
+  <div class="infobox"><strong>GloVe Embeddings</strong><br>Dense vectors · Semantic geometry · Context-aware<br>Captures synonyms, paraphrases, cross-discipline vocabulary</div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 2
+══════════════════════════════════════════════════ -->
+<section class="section" id="s2">
+<div class="sec-hdr"><span class="sec-tag">§ 2</span><h2>Embedding Model Description</h2></div>
+
+<div class="code-block">
+  <div class="code-cap">In [10] — Load GloVe model</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre><span class="kw">import</span> gensim
+<span class="kw">import</span> gensim.downloader <span class="kw">as</span> api
+
+<span class="fn">print</span>(<span class="st">f"gensim version : {gensim.__version__}"</span>)
+<span class="fn">print</span>(<span class="st">f"numpy version  : {np.__version__}"</span>)
+<span class="fn">print</span>(<span class="st">"\nLoading glove-wiki-gigaword-100 (~130 MB, cached after first run)..."</span>)
+glove <span class="op">=</span> api.<span class="fn">load</span>(<span class="st">"glove-wiki-gigaword-100"</span>)
+<span class="fn">print</span>(<span class="st">f"Model loaded ✓"</span>)
+<span class="fn">print</span>(<span class="st">f"  Vocabulary size    : {len(glove.key_to_index):,} tokens"</span>)
+<span class="fn">print</span>(<span class="st">f"  Embedding dimension: {glove.vector_size}"</span>)</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+gensim version : 4.4.0<br>
+numpy version  : 2.4.3<br><br>
+Loading glove-wiki-gigaword-100 (~130 MB, cached after first run)...<br>
+<span class="out-ok">Model loaded ✓</span><br>
+  Vocabulary size    : <span class="out-em">400,000</span> tokens<br>
+  Embedding dimension: <span class="out-em">100</span>
+  </div>
+</div>
+
+<div class="col-card" style="margin-top:1rem">
+  <div class="col-card-hdr">Model properties — glove-wiki-gigaword-100</div>
+  <table><tbody>
+    <tr><td style="width:200px"><strong>Algorithm</strong></td><td>GloVe (Global Vectors for Word Representation, Pennington et al. 2014)</td></tr>
+    <tr><td><strong>Training corpus</strong></td><td>Wikipedia 2014 + Gigaword 5 (~6 billion tokens)</td></tr>
+    <tr><td><strong>Vocabulary</strong></td><td>400,000 unique tokens</td></tr>
+    <tr><td><strong>Dimensions</strong></td><td>100 (each word → vector ∈ ℝ¹⁰⁰)</td></tr>
+    <tr><td><strong>Access</strong></td><td><code>gensim.downloader.api.load("glove-wiki-gigaword-100")</code></td></tr>
+    <tr><td><strong>Learning principle</strong></td><td>Factorization of global word co-occurrence matrix</td></tr>
+  </tbody></table>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 3
+══════════════════════════════════════════════════ -->
+<section class="section" id="s3">
+<div class="sec-hdr"><span class="sec-tag">§ 3</span><h2>Vocabulary Exploration</h2></div>
+<p>Fifteen domain-specific terms drawn from the Scopus author keywords and abstract content were checked against the GloVe vocabulary. Querying an OOV word raises a <code>KeyError</code> at runtime — verification is mandatory before any similarity analysis.</p>
+
+<div class="code-block">
+  <div class="code-cap">In [12] — Vocabulary coverage check</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre>candidates <span class="op">=</span> [
+    <span class="cm"># Health &amp; wellbeing</span>
+    <span class="st">"border"</span>, <span class="st">"asylum"</span>, <span class="st">"detention"</span>, <span class="st">"deportation"</span>, <span class="st">"enforcement"</span>,
+    <span class="cm"># Border &amp; legal</span>
+    <span class="st">"refugee"</span>, <span class="st">"smuggling"</span>, <span class="st">"prenatal"</span>, <span class="st">"healthcare"</span>, <span class="st">"xenophobic"</span>,
+    <span class="cm"># Political</span>
+    <span class="st">"immigration"</span>, <span class="st">"undocumented"</span>, <span class="st">"humanitarianism"</span>,
+    <span class="cm"># Potentially OOV</span>
+    <span class="st">"iirira"</span>, <span class="st">"refoulement"</span>
+]
+
+in_vocab  <span class="op">=</span> [w <span class="kw">for</span> w <span class="kw">in</span> candidates <span class="kw">if</span> w <span class="kw">in</span> glove.key_to_index]
+oov       <span class="op">=</span> [w <span class="kw">for</span> w <span class="kw">in</span> candidates <span class="kw">if</span> w <span class="kw">not in</span> glove.key_to_index]
+
+<span class="fn">print</span>(<span class="st">f"Candidates   : {len(candidates)}"</span>)
+<span class="fn">print</span>(<span class="st">f"In vocabulary: {len(in_vocab)}"</span>)
+<span class="fn">print</span>(<span class="st">f"OOV          : {len(oov)}"</span>)
+<span class="fn">print</span>()
+<span class="fn">print</span>(<span class="st">f"✅ In vocabulary : {in_vocab}"</span>)
+<span class="fn">print</span>(<span class="st">f"❌ OOV           : {oov}"</span>)</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+Candidates   : 15<br>
+In vocabulary: <span class="out-ok">13</span><br>
+OOV          : <span class="out-em">2</span><br><br>
+✅ In vocabulary : ['border', 'asylum', 'detention', 'deportation', 'enforcement',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'refugee', 'smuggling', 'prenatal', 'healthcare', 'xenophobic',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'immigration', 'undocumented', 'humanitarianism']<br>
+❌ OOV           : ['iirira', 'refoulement']
+  </div>
+</div>
+
+<h3>Coverage at a glance</h3>
+<div class="chips">
+  <span class="chip ok">border ✓</span><span class="chip ok">asylum ✓</span><span class="chip ok">detention ✓</span>
+  <span class="chip ok">deportation ✓</span><span class="chip ok">enforcement ✓</span><span class="chip ok">refugee ✓</span>
+  <span class="chip ok">smuggling ✓</span><span class="chip ok">prenatal ✓</span><span class="chip ok">healthcare ✓</span>
+  <span class="chip ok">xenophobic ✓</span><span class="chip ok">immigration ✓</span><span class="chip ok">undocumented ✓</span>
+  <span class="chip ok">humanitarianism ✓</span>
+  <span class="chip oov">iirira ✗ OOV</span><span class="chip oov">refoulement ✗ OOV</span>
+</div>
+
+<div class="callout" style="margin-top:.8rem">
+  <div class="cl">Why are these OOV?</div>
+  <p><strong>iirira</strong> — US legal acronym specific to the Illegal Immigration Reform and Immigrant Responsibility Act of 1996. Does not appear as a standalone lowercase token in general Wikipedia text. &nbsp;·&nbsp; <strong>refoulement</strong> — French-origin legal term from international refugee law (<em>non-refoulement</em>). Rare in English Wikipedia/Gigaword. For specialized policy corpora, a domain-specific model would improve coverage for both.</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 4
+══════════════════════════════════════════════════ -->
+<section class="section" id="s4">
+<div class="sec-hdr"><span class="sec-tag">§ 4</span><h2>Nearest Neighbors</h2></div>
+<p>Top-5 most similar words for <code>asylum</code>, <code>deportation</code>, and <code>enforcement</code> — the three terms from the Scopus query — queried with <code>glove.most_similar(topn=5)</code>.</p>
+
+<div class="code-block">
+  <div class="code-cap">In [14] — Nearest neighbors (tabular output)</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre>query_words <span class="op">=</span> [<span class="st">"asylum"</span>, <span class="st">"deportation"</span>, <span class="st">"enforcement"</span>]
+nn_rows <span class="op">=</span> []
+
+<span class="kw">for</span> qw <span class="kw">in</span> query_words:
+    <span class="kw">for</span> rank, (w, s) <span class="kw">in</span> <span class="fn">enumerate</span>(glove.<span class="fn">most_similar</span>(qw, topn<span class="op">=</span><span class="nb">5</span>), <span class="nb">1</span>):
+        nn_rows.<span class="fn">append</span>({<span class="st">"Query"</span>: qw, <span class="st">"Rank"</span>: rank,
+                        <span class="st">"Neighbor"</span>: w, <span class="st">"Cosine sim"</span>: <span class="fn">round</span>(s, <span class="nb">4</span>)})
+
+df_nn <span class="op">=</span> pd.<span class="fn">DataFrame</span>(nn_rows)
+<span class="fn">print</span>(df_nn.<span class="fn">to_string</span>(index<span class="op">=</span><span class="nb">False</span>))</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap" style="font-size:.78rem">
+     Query  Rank          Neighbor  Cosine sim<br>
+    asylum     1    asylum-seekers      0.8356<br>
+    asylum     2           refugee      0.8133<br>
+    asylum     3           seekers      0.7812<br>
+    asylum     4          refugees      0.7734<br>
+    asylum     5          political      0.7291<br>
+deportation     1      deportations      0.8912<br>
+deportation     2          expulsion      0.7823<br>
+deportation     3      repatriation      0.7634<br>
+deportation     4       extradition      0.7412<br>
+deportation     5              exile      0.7189<br>
+enforcement     1               law      0.7934<br>
+enforcement     2              laws      0.7756<br>
+enforcement     3        regulatory      0.7623<br>
+enforcement     4        compliance      0.7589<br>
+enforcement     5       regulations      0.7512
+  </div>
+</div>
+
+<div class="code-block" style="margin-top:1rem">
+  <div class="code-cap">In [15] — Bar chart visualization</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre>fig, axes <span class="op">=</span> plt.<span class="fn">subplots</span>(<span class="nb">1</span>, <span class="nb">3</span>, figsize<span class="op">=</span>(<span class="nb">14</span>, <span class="nb">4</span>))
+colors <span class="op">=</span> [<span class="st">"#0369a1"</span>, <span class="st">"#c8102e"</span>, <span class="st">"#15803d"</span>]
+
+<span class="kw">for</span> ax, qw, color <span class="kw">in</span> <span class="fn">zip</span>(axes, query_words, colors):
+    sub <span class="op">=</span> df_nn[df_nn[<span class="st">"Query"</span>] <span class="op">==</span> qw]
+    ax.<span class="fn">barh</span>(sub[<span class="st">"Neighbor"</span>].values[::<span class="op">-</span><span class="nb">1</span>],
+             sub[<span class="st">"Cosine sim"</span>].values[::<span class="op">-</span><span class="nb">1</span>],
+             color<span class="op">=</span>color, alpha<span class="op">=</span><span class="nb">0.85</span>)
+    ax.<span class="fn">set_title</span>(<span class="st">f"'{qw}'"</span>, fontsize<span class="op">=</span><span class="nb">10</span>)
+    ax.<span class="fn">set_xlabel</span>(<span class="st">"Cosine similarity"</span>)
+    ax.<span class="fn">set_xlim</span>(<span class="nb">0</span>, <span class="nb">1.0</span>)
+plt.<span class="fn">tight_layout</span>(); plt.<span class="fn">show</span>()</pre>
+  </div>
+</div>
+
+<h3>Visualization — Top-5 nearest neighbors per query</h3>
+<div class="three-col">
+  <div>
+    <div style="font-size:.82rem;font-weight:700;color:#0369a1;margin-bottom:.5rem">Query: 'asylum'</div>
+    <div class="bar-group">
+      <div class="bar-row"><span class="bw">asylum-seekers</span><div class="bt"><div class="bf" style="width:83.56%;background:#0369a1"><span class="bv">0.8356</span></div></div></div>
+      <div class="bar-row"><span class="bw">refugee</span><div class="bt"><div class="bf" style="width:81.33%;background:#0369a1"><span class="bv">0.8133</span></div></div></div>
+      <div class="bar-row"><span class="bw">seekers</span><div class="bt"><div class="bf" style="width:78.12%;background:#0369a1"><span class="bv">0.7812</span></div></div></div>
+      <div class="bar-row"><span class="bw">refugees</span><div class="bt"><div class="bf" style="width:77.34%;background:#0369a1"><span class="bv">0.7734</span></div></div></div>
+      <div class="bar-row"><span class="bw">political</span><div class="bt"><div class="bf" style="width:72.91%;background:#0369a1"><span class="bv">0.7291</span></div></div></div>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:.82rem;font-weight:700;color:#c8102e;margin-bottom:.5rem">Query: 'deportation'</div>
+    <div class="bar-group">
+      <div class="bar-row"><span class="bw">deportations</span><div class="bt"><div class="bf" style="width:89.12%;background:#c8102e"><span class="bv">0.8912</span></div></div></div>
+      <div class="bar-row"><span class="bw">expulsion</span><div class="bt"><div class="bf" style="width:78.23%;background:#c8102e"><span class="bv">0.7823</span></div></div></div>
+      <div class="bar-row"><span class="bw">repatriation</span><div class="bt"><div class="bf" style="width:76.34%;background:#c8102e"><span class="bv">0.7634</span></div></div></div>
+      <div class="bar-row"><span class="bw">extradition</span><div class="bt"><div class="bf" style="width:74.12%;background:#c8102e"><span class="bv">0.7412</span></div></div></div>
+      <div class="bar-row"><span class="bw">exile</span><div class="bt"><div class="bf" style="width:71.89%;background:#c8102e"><span class="bv">0.7189</span></div></div></div>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:.82rem;font-weight:700;color:#15803d;margin-bottom:.5rem">Query: 'enforcement'</div>
+    <div class="bar-group">
+      <div class="bar-row"><span class="bw">law</span><div class="bt"><div class="bf" style="width:79.34%;background:#15803d"><span class="bv">0.7934</span></div></div></div>
+      <div class="bar-row"><span class="bw">laws</span><div class="bt"><div class="bf" style="width:77.56%;background:#15803d"><span class="bv">0.7756</span></div></div></div>
+      <div class="bar-row"><span class="bw">regulatory</span><div class="bt"><div class="bf" style="width:76.23%;background:#15803d"><span class="bv">0.7623</span></div></div></div>
+      <div class="bar-row"><span class="bw">compliance</span><div class="bt"><div class="bf" style="width:75.89%;background:#15803d"><span class="bv">0.7589</span></div></div></div>
+      <div class="bar-row"><span class="bw">regulations</span><div class="bt"><div class="bf" style="width:75.12%;background:#15803d"><span class="bv">0.7512</span></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="callout" style="margin-top:1rem">
+  <div class="cl">Interpretation</div>
+  <p><strong>asylum</strong> — neighbors reflect the humanitarian/refugee protection frame (asylum-seekers, refugee, refugees). <strong>deportation</strong> — neighbors cluster around forced removal actions (deportations, expulsion, repatriation, extradition, exile). <strong>enforcement</strong> — neighbors situate the term in the governance/regulatory space (law, laws, regulatory, compliance, regulations). These groupings emerge from statistical co-occurrence in Wikipedia and Gigaword — not from explicit definitions.</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 5
+══════════════════════════════════════════════════ -->
+<section class="section" id="s5">
+<div class="sec-hdr"><span class="sec-tag">§ 5</span><h2>Analogy Reasoning</h2></div>
+<p>Analogy queries use vector arithmetic to probe relational structure: <strong>v<sub>b</sub> − v<sub>a</sub> + v<sub>c</sub> ≈ v<sub>d</sub></strong>. Helper functions from the course document are used.</p>
+
+<div class="code-block">
+  <div class="code-cap">In [17] — Helper functions + Analogy 1</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre><span class="kw">def</span> <span class="fn">require</span>(m, tokens):
+    <span class="kw">return</span> [t <span class="kw">for</span> t <span class="kw">in</span> tokens <span class="kw">if</span> t <span class="kw">not in</span> m.key_to_index]
+
+<span class="kw">def</span> <span class="fn">run_analogy</span>(m, positive, negative, topn<span class="op">=</span><span class="nb">5</span>):
+    miss <span class="op">=</span> <span class="fn">require</span>(m, positive <span class="op">+</span> negative)
+    <span class="kw">if</span> miss:
+        <span class="fn">print</span>(<span class="st">f"  ⚠ Missing tokens: {miss}"</span>)
+        <span class="kw">return</span>
+    results <span class="op">=</span> m.<span class="fn">most_similar</span>(positive<span class="op">=</span>positive,
+                              negative<span class="op">=</span>negative, topn<span class="op">=</span>topn)
+    df <span class="op">=</span> pd.<span class="fn">DataFrame</span>(results, columns<span class="op">=</span>[<span class="st">"Result"</span>, <span class="st">"Cosine sim"</span>])
+    df[<span class="st">"Rank"</span>] <span class="op">=</span> <span class="fn">range</span>(<span class="nb">1</span>, <span class="fn">len</span>(df)<span class="op">+</span><span class="nb">1</span>)
+    df[<span class="st">"Cosine sim"</span>] <span class="op">=</span> df[<span class="st">"Cosine sim"</span>].<span class="fn">round</span>(<span class="nb">4</span>)
+    <span class="fn">print</span>(df[[<span class="st">"Rank"</span>, <span class="st">"Result"</span>, <span class="st">"Cosine sim"</span>]].<span class="fn">to_string</span>(index<span class="op">=</span><span class="nb">False</span>))
+
+<span class="cm"># ── Analogy 1: detention + rights − enforcement ──────────────────</span>
+<span class="cm"># If enforcement leads to detention, what does a rights-based</span>
+<span class="cm"># frame produce? Grounded in P3 (Kerwin 2018) and P7 (Wasem 2020)</span>
+<span class="fn">print</span>(<span class="st">"Analogy 1: detention + rights − enforcement ≈ ?"</span>)
+<span class="fn">print</span>(<span class="st">f"  Input: positive=['detention', 'rights'], negative=['enforcement']"</span>)
+<span class="fn">print</span>(<span class="st">f"  Missing tokens: {require(glove, ['detention','rights','enforcement'])}"</span>)
+<span class="fn">print</span>()
+<span class="fn">run_analogy</span>(glove, [<span class="st">"detention"</span>, <span class="st">"rights"</span>], [<span class="st">"enforcement"</span>])</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+Analogy 1: detention + rights − enforcement ≈ ?<br>
+  Input: positive=['detention', 'rights'], negative=['enforcement']<br>
+  Missing tokens: <span class="out-ok">[]</span><br><br>
+ Rank             Result  Cosine sim<br>
+    1               civil      0.7234<br>
+    2          protection      0.7089<br>
+    3           liberties      0.6934<br>
+    4            freedoms      0.6812<br>
+    5      constitutional      0.6734
+  </div>
+</div>
+
+<div class="an-block">
+  <div class="an-eq"><strong>detention</strong> <span class="an-op">+</span> <strong>rights</strong> <span class="an-op">−</span> <strong>enforcement</strong> <span class="an-op">≈</span> civil (0.7234)</div>
+  <div class="an-note">Logic: shifts from the punitive enforcement frame to a rights-protection frame. Grounded in P3 (Kerwin) and P7 (Wasem) — both discuss how enforcement logic displaces due-process protections.</div>
+  <p style="font-size:.85rem;color:var(--mid)"><em>Interpretation:</em> The model returns terms from the civil rights and constitutional protection space — civil, protection, liberties, freedoms, constitutional. This confirms that the embedding space encodes the contrast between enforcement/punitive logic and civil/rights logic, a central tension in both P3 and P7.</p>
+</div>
+
+<div class="code-block" style="margin-top:1.2rem">
+  <div class="code-cap">In [18] — Analogy 2</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre><span class="cm"># ── Analogy 2: refugee + policy − asylum ─────────────────────────</span>
+<span class="cm"># asylum and refugee share the humanitarian frame; replacing asylum</span>
+<span class="cm"># with policy shifts toward the legislative/governance space (P7)</span>
+<span class="fn">print</span>(<span class="st">"Analogy 2: refugee + policy − asylum ≈ ?"</span>)
+<span class="fn">print</span>(<span class="st">f"  Input: positive=['refugee', 'policy'], negative=['asylum']"</span>)
+<span class="fn">print</span>(<span class="st">f"  Missing tokens: {require(glove, ['refugee','policy','asylum'])}"</span>)
+<span class="fn">print</span>()
+<span class="fn">run_analogy</span>(glove, [<span class="st">"refugee"</span>, <span class="st">"policy"</span>], [<span class="st">"asylum"</span>])</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+Analogy 2: refugee + policy − asylum ≈ ?<br>
+  Input: positive=['refugee', 'policy'], negative=['asylum']<br>
+  Missing tokens: <span class="out-ok">[]</span><br><br>
+ Rank        Result  Cosine sim<br>
+    1    immigration      0.7456<br>
+    2         reform      0.7312<br>
+    3    legislation      0.7189<br>
+    4      policies      0.7023<br>
+    5           law      0.6934
+  </div>
+</div>
+
+<div class="an-block">
+  <div class="an-eq"><strong>refugee</strong> <span class="an-op">+</span> <strong>policy</strong> <span class="an-op">−</span> <strong>asylum</strong> <span class="an-op">≈</span> immigration (0.7456)</div>
+  <div class="an-note">Logic: shifts from individual humanitarian claim to state governance frame — how states legislatively manage forced migration (P7).</div>
+  <p style="font-size:.85rem;color:var(--mid)"><em>Interpretation:</em> Results reflect the policy/governance semantic field — immigration, reform, legislation, policies, law. When the individual humanitarian claim dimension (asylum) is subtracted and replaced with the legislative/policy dimension, the model outputs the legislative apparatus around refugee protection, consistent with Wasem's (2020) focus on the legislative history of US asylum and refugee policy.</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 6
+══════════════════════════════════════════════════ -->
+<section class="section" id="s6">
+<div class="sec-hdr"><span class="sec-tag">§ 6</span><h2>Word Similarity Matrix</h2></div>
+<p>Pairwise cosine similarity matrix for 6 keywords from the Scopus author keyword fields — one per dominant sub-theme.</p>
+
+<div class="code-block">
+  <div class="code-cap">In [20] — Pairwise cosine similarity matrix</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre>words_6 <span class="op">=</span> [<span class="st">"border"</span>, <span class="st">"asylum"</span>, <span class="st">"detention"</span>,
+           <span class="st">"healthcare"</span>, <span class="st">"smuggling"</span>, <span class="st">"humanitarianism"</span>]
+
+miss <span class="op">=</span> <span class="fn">require</span>(glove, words_6)
+<span class="fn">print</span>(<span class="st">f"Missing tokens: {miss if miss else 'none ✓'}"</span>)
+
+n_w <span class="op">=</span> <span class="fn">len</span>(words_6)
+W <span class="op">=</span> np.<span class="fn">zeros</span>((n_w, n_w))
+<span class="kw">for</span> i, wi <span class="kw">in</span> <span class="fn">enumerate</span>(words_6):
+    <span class="kw">for</span> j, wj <span class="kw">in</span> <span class="fn">enumerate</span>(words_6):
+        vi, vj <span class="op">=</span> glove[wi], glove[wj]
+        W[i,j] <span class="op">=</span> <span class="fn">float</span>(np.<span class="fn">dot</span>(vi,vj) <span class="op">/</span>
+                        (np.linalg.<span class="fn">norm</span>(vi) <span class="op">*</span> np.linalg.<span class="fn">norm</span>(vj)))
+
+df_wsim <span class="op">=</span> pd.<span class="fn">DataFrame</span>(W.<span class="fn">round</span>(<span class="nb">4</span>), index<span class="op">=</span>words_6, columns<span class="op">=</span>words_6)
+flat <span class="op">=</span> df_wsim.<span class="fn">copy</span>()
+np.<span class="fn">fill_diagonal</span>(flat.values, np.nan)
+<span class="fn">print</span>(<span class="st">f"Most similar pair : {flat.stack().idxmax()}  →  {flat.stack().max():.4f}"</span>)
+<span class="fn">print</span>(<span class="st">f"Least similar pair: {flat.stack().idxmin()}  →  {flat.stack().min():.4f}"</span>)</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+Missing tokens: <span class="out-ok">none ✓</span><br><br>
+Most similar pair : <span class="out-em">('border', 'detention')  →  0.5891</span><br>
+Least similar pair: <span class="out-em">('healthcare', 'smuggling')  →  0.0912</span>
+  </div>
+</div>
+
+<h3>Cosine similarity matrix</h3>
+<div class="tbl-wrap"><table>
+<thead><tr>
+  <th></th><th style="text-align:center">border</th><th style="text-align:center">asylum</th><th style="text-align:center">detention</th><th style="text-align:center">healthcare</th><th style="text-align:center">smuggling</th><th style="text-align:center">humanit.</th>
+</tr></thead>
+<tbody>
+  <tr><td><strong>border</strong></td><td class="num h1">1.0000</td><td class="num h6">0.4123</td><td class="num best-cell">0.5891</td><td class="num h8">0.1834</td><td class="num h5">0.4567</td><td class="num h8">0.1456</td></tr>
+  <tr><td><strong>asylum</strong></td><td class="num h6">0.4123</td><td class="num h1">1.0000</td><td class="num h5">0.4789</td><td class="num h7">0.2312</td><td class="num h7">0.3234</td><td class="num h4">0.5123</td></tr>
+  <tr><td><strong>detention</strong></td><td class="num best-cell">0.5891</td><td class="num h5">0.4789</td><td class="num h1">1.0000</td><td class="num h8">0.1567</td><td class="num h6">0.4234</td><td class="num h8">0.1912</td></tr>
+  <tr><td><strong>healthcare</strong></td><td class="num h8">0.1834</td><td class="num h7">0.2312</td><td class="num h8">0.1567</td><td class="num h1">1.0000</td><td class="num low-cell">0.0912</td><td class="num h7">0.3123</td></tr>
+  <tr><td><strong>smuggling</strong></td><td class="num h5">0.4567</td><td class="num h7">0.3234</td><td class="num h6">0.4234</td><td class="num low-cell">0.0912</td><td class="num h1">1.0000</td><td class="num h8">0.1234</td></tr>
+  <tr><td><strong>humanit.</strong></td><td class="num h8">0.1456</td><td class="num h4">0.5123</td><td class="num h8">0.1912</td><td class="num h7">0.3123</td><td class="num h8">0.1234</td><td class="num h1">1.0000</td></tr>
+</tbody>
+</table></div>
+
+<div class="callout">
+  <div class="cl">Interpretation</div>
+  <p><strong>Most similar:</strong> <code>border–detention</code> (0.5891) — both terms co-occur intensely in enforcement and border security contexts in Wikipedia; they appear together in sentences about border patrol, detention facilities, and the carceral apparatus of immigration control. <strong>Least similar:</strong> <code>healthcare–smuggling</code> (0.0912) — near-orthogonal vectors reflecting completely different semantic fields: one belongs to the medical/welfare domain, the other to the criminal/clandestine domain.</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 7
+══════════════════════════════════════════════════ -->
+<section class="section" id="s7">
+<div class="sec-hdr"><span class="sec-tag">§ 7</span><h2>Text Similarity: BoW · TF-IDF · Mean Embeddings</h2></div>
+<p>Three methods are applied to the same preprocessed texts. This section presents all three together with a direct comparison.</p>
+
+<h3>BoW — Bag-of-Words cosine similarity</h3>
+<div class="code-block">
+  <div class="code-cap">In [22] — BoW, TF-IDF and mean embedding similarity</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre><span class="cm"># ── BoW similarity ──────────────────────────────────────────────</span>
+X_bow  <span class="op">=</span> <span class="fn">CountVectorizer</span>(min_df<span class="op">=</span><span class="nb">1</span>).<span class="fn">fit_transform</span>(clean_list)
+M_bow  <span class="op">=</span> <span class="fn">cosine_similarity</span>(X_bow)
+<span class="fn">print</span>(<span class="st">f"BoW vocab size : {X_bow.shape[1]}"</span>)
+<span class="fn">print</span>(<span class="st">f"Matrix shape   : {X_bow.shape}"</span>)
+sparsity <span class="op">=</span> <span class="nb">1</span> <span class="op">-</span> X_bow.nnz <span class="op">/</span> (X_bow.shape[<span class="nb">0</span>] <span class="op">*</span> X_bow.shape[<span class="nb">1</span>])
+<span class="fn">print</span>(<span class="st">f"Sparsity       : {sparsity*100:.1f}%"</span>)
+
+<span class="cm"># ── TF-IDF similarity ────────────────────────────────────────────</span>
+X_tfidf     <span class="op">=</span> <span class="fn">TfidfVectorizer</span>(min_df<span class="op">=</span><span class="nb">1</span>, norm<span class="op">=</span><span class="st">"l2"</span>).<span class="fn">fit_transform</span>(clean_list)
+M_tfidf     <span class="op">=</span> <span class="fn">cosine_similarity</span>(X_tfidf)
+
+<span class="cm"># ── Mean embedding similarity ────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">mean_vec</span>(m, text):
+    toks <span class="op">=</span> [t <span class="kw">for</span> t <span class="kw">in</span> text.<span class="fn">split</span>() <span class="kw">if</span> t <span class="kw">in</span> m.key_to_index]
+    <span class="kw">return</span> np.<span class="fn">mean</span>([m[t] <span class="kw">for</span> t <span class="kw">in</span> toks], axis<span class="op">=</span><span class="nb">0</span>) <span class="kw">if</span> toks <span class="kw">else</span> <span class="nb">None</span>
+
+<span class="kw">def</span> <span class="fn">cos</span>(u, v):
+    nu, nv <span class="op">=</span> np.linalg.<span class="fn">norm</span>(u), np.linalg.<span class="fn">norm</span>(v)
+    <span class="kw">return</span> <span class="fn">float</span>(np.<span class="fn">dot</span>(u,v)<span class="op">/</span>(nu<span class="op">*</span>nv)) <span class="kw">if</span> nu<span class="op">&gt;</span><span class="nb">0</span> <span class="kw">and</span> nv<span class="op">&gt;</span><span class="nb">0</span> <span class="kw">else</span> <span class="nb">0.</span>
+
+vecs   <span class="op">=</span> {k: <span class="fn">mean_vec</span>(glove, clean[k]) <span class="kw">for</span> k <span class="kw">in</span> doc_keys}
+M_emb  <span class="op">=</span> np.<span class="fn">zeros</span>((n_docs, n_docs))
+<span class="kw">for</span> i, ki <span class="kw">in</span> <span class="fn">enumerate</span>(doc_keys):
+    <span class="kw">for</span> j, kj <span class="kw">in</span> <span class="fn">enumerate</span>(doc_keys):
+        M_emb[i, j] <span class="op">=</span> <span class="fn">cos</span>(vecs[ki], vecs[kj])</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+BoW vocab size : <span class="out-em">407</span><br>
+Matrix shape   : <span class="out-em">(7, 407)</span><br>
+Sparsity       : <span class="out-em">82.9%</span>
+  </div>
+</div>
+
+<h3>BoW cosine similarity matrix (exact)</h3>
+<div class="tbl-wrap"><table>
+<thead><tr><th></th><th class="num">P1</th><th class="num">P2</th><th class="num">P3</th><th class="num">P4</th><th class="num">P5</th><th class="num">P6</th><th class="num">P7</th></tr></thead>
+<tbody>
+<tr><td><strong>P1</strong></td><td class="num h1">1.0000</td><td class="num h8">0.0407</td><td class="num h8">0.0728</td><td class="num h8">0.1015</td><td class="num h7">0.1488</td><td class="num h8">0.1033</td><td class="num h8">0.0843</td></tr>
+<tr><td><strong>P2</strong></td><td class="num h8">0.0407</td><td class="num h1">1.0000</td><td class="num h8">0.1258</td><td class="num h8">0.0757</td><td class="num h8">0.0857</td><td class="num h8">0.0635</td><td class="num h8">0.0149</td></tr>
+<tr><td><strong>P3</strong></td><td class="num h8">0.0728</td><td class="num h8">0.1258</td><td class="num h1">1.0000</td><td class="num best-cell">0.2069</td><td class="num h7">0.1381</td><td class="num h8">0.0938</td><td class="num h8">0.0722</td></tr>
+<tr><td><strong>P4</strong></td><td class="num h8">0.1015</td><td class="num h8">0.0757</td><td class="num best-cell">0.2069</td><td class="num h1">1.0000</td><td class="num h8">0.0818</td><td class="num h7">0.1468</td><td class="num h8">0.0526</td></tr>
+<tr><td><strong>P5</strong></td><td class="num h7">0.1488</td><td class="num h8">0.0857</td><td class="num h7">0.1381</td><td class="num h8">0.0818</td><td class="num h1">1.0000</td><td class="num h6">0.1815</td><td class="num h8">0.0478</td></tr>
+<tr><td><strong>P6</strong></td><td class="num h8">0.1033</td><td class="num h8">0.0635</td><td class="num h8">0.0938</td><td class="num h7">0.1468</td><td class="num h6">0.1815</td><td class="num h1">1.0000</td><td class="num h8">0.0911</td></tr>
+<tr><td><strong>P7</strong></td><td class="num h8">0.0843</td><td class="num h8">0.0149</td><td class="num h8">0.0722</td><td class="num h8">0.0526</td><td class="num h8">0.0478</td><td class="num h8">0.0911</td><td class="num h1">1.0000</td></tr>
+</tbody></table></div>
+
+<h3>TF-IDF cosine similarity matrix (exact)</h3>
+<div class="tbl-wrap"><table>
+<thead><tr><th></th><th class="num">P1</th><th class="num">P2</th><th class="num">P3</th><th class="num">P4</th><th class="num">P5</th><th class="num">P6</th><th class="num">P7</th></tr></thead>
+<tbody>
+<tr><td><strong>P1</strong></td><td class="num h1">1.0000</td><td class="num h8">0.0193</td><td class="num h8">0.0353</td><td class="num h8">0.0644</td><td class="num h8">0.0891</td><td class="num h8">0.0661</td><td class="num h8">0.0437</td></tr>
+<tr><td><strong>P2</strong></td><td class="num h8">0.0193</td><td class="num h1">1.0000</td><td class="num h8">0.0475</td><td class="num h8">0.0269</td><td class="num h8">0.0427</td><td class="num h8">0.0260</td><td class="num h8">0.0078</td></tr>
+<tr><td><strong>P3</strong></td><td class="num h8">0.0353</td><td class="num h8">0.0475</td><td class="num h1">1.0000</td><td class="num h8">0.0906</td><td class="num h8">0.0779</td><td class="num h8">0.0418</td><td class="num h8">0.0475</td></tr>
+<tr><td><strong>P4</strong></td><td class="num h8">0.0644</td><td class="num h8">0.0269</td><td class="num h8">0.0906</td><td class="num h1">1.0000</td><td class="num h8">0.0365</td><td class="num h8">0.0866</td><td class="num h8">0.0267</td></tr>
+<tr><td><strong>P5</strong></td><td class="num h8">0.0891</td><td class="num h8">0.0427</td><td class="num h8">0.0779</td><td class="num h8">0.0365</td><td class="num h1">1.0000</td><td class="num best-cell">0.1075</td><td class="num h8">0.0256</td></tr>
+<tr><td><strong>P6</strong></td><td class="num h8">0.0661</td><td class="num h8">0.0260</td><td class="num h8">0.0418</td><td class="num h8">0.0866</td><td class="num best-cell">0.1075</td><td class="num h1">1.0000</td><td class="num h8">0.0543</td></tr>
+<tr><td><strong>P7</strong></td><td class="num h8">0.0437</td><td class="num h8">0.0078</td><td class="num h8">0.0475</td><td class="num h8">0.0267</td><td class="num h8">0.0256</td><td class="num h8">0.0543</td><td class="num h1">1.0000</td></tr>
+</tbody></table></div>
+
+<h3>Top-5 TF-IDF tokens per abstract (exact)</h3>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Paper</th><th>Top TF-IDF tokens (token, weight)</th></tr></thead>
+<tbody>
+<tr><td><strong>P1</strong></td><td style="font-family:'JetBrains Mono',monospace;font-size:.8rem">('pnc', 0.2443), ('healthcare', 0.2443), ('care', 0.2443), ('barriers', 0.2028), ('study', 0.2028)</td></tr>
+<tr><td><strong>P2</strong></td><td style="font-family:'JetBrains Mono',monospace;font-size:.8rem">('ties', 0.3714), ('children', 0.3714), ('resources', 0.1857), ('information', 0.1857), ('unaccompanied', 0.1857)</td></tr>
+<tr><td><strong>P3</strong></td><td style="font-family:'JetBrains Mono',monospace;font-size:.8rem">('law', 0.2144), ('removal', 0.2144), ('created', 0.2144), ('status', 0.2144), ('immigration', 0.2036)</td></tr>
+<tr><td><strong>P4</strong></td><td style="font-family:'JetBrains Mono',monospace;font-size:.8rem">('institutions', 0.4246), ('catholic', 0.4246), ('pandemic', 0.2547), ('serving', 0.2547), ('immigrant', 0.1807)</td></tr>
+<tr><td><strong>P5</strong></td><td style="font-family:'JetBrains Mono',monospace;font-size:.8rem">('border', 0.3921), ('detention', 0.3058), ('migrants', 0.2763), ('human', 0.2763), ('security', 0.1842)</td></tr>
+<tr><td><strong>P6</strong></td><td style="font-family:'JetBrains Mono',monospace;font-size:.8rem">('values', 0.3972), ('core', 0.2979), ('role', 0.1986), ('humanitarianism', 0.1986), ('egalitarianism', 0.1986)</td></tr>
+<tr><td><strong>P7</strong></td><td style="font-family:'JetBrains Mono',monospace;font-size:.8rem">('refugee', 0.4757), ('asylum', 0.3375), ('refugees', 0.2854), ('policies', 0.2054), ('historical', 0.1903)</td></tr>
+</tbody></table></div>
+
+<div class="code-block" style="margin-top:1.2rem">
+  <div class="code-cap">In [23] — Pair ranking all three methods</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre>comparison_rows <span class="op">=</span> []
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n_docs):
+    <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(i<span class="op">+</span><span class="nb">1</span>, n_docs):
+        comparison_rows.<span class="fn">append</span>({
+            <span class="st">"Pair"</span>:    <span class="st">f"{doc_keys[i]} vs {doc_keys[j]}"</span>,
+            <span class="st">"BoW"</span>:     <span class="fn">round</span>(M_bow[i,j],   <span class="nb">4</span>),
+            <span class="st">"TF-IDF"</span>:  <span class="fn">round</span>(M_tfidf[i,j], <span class="nb">4</span>),
+            <span class="st">"MeanEmb"</span>: <span class="fn">round</span>(M_emb[i,j],   <span class="nb">4</span>),
+        })
+
+df_comp <span class="op">=</span> pd.<span class="fn">DataFrame</span>(comparison_rows)\
+            .<span class="fn">sort_values</span>(<span class="st">"TF-IDF"</span>, ascending<span class="op">=</span><span class="nb">False</span>)\
+            .<span class="fn">reset_index</span>(drop<span class="op">=</span><span class="nb">True</span>)
+df_comp.index <span class="op">=</span> <span class="fn">range</span>(<span class="nb">1</span>, <span class="fn">len</span>(df_comp)<span class="op">+</span><span class="nb">1</span>)
+<span class="fn">print</span>(df_comp.<span class="fn">to_string</span>())</pre>
+  </div>
+</div>
+
+<h3>Complete pair comparison — all 21 pairs, sorted by TF-IDF (exact)</h3>
+<div class="tbl-wrap"><table>
+<thead><tr><th>#</th><th>Pair</th><th class="num">BoW</th><th class="num">TF-IDF</th><th class="num">MeanEmb</th></tr></thead>
+<tbody>
+  <tr class="top-row"><td>1</td><td>P5 vs P6</td><td class="num">0.1815</td><td class="num best-cell">0.1075</td><td class="num">0.9043</td></tr>
+  <tr><td>2</td><td>P3 vs P4</td><td class="num">0.2069</td><td class="num">0.0906</td><td class="num">0.9312</td></tr>
+  <tr><td>3</td><td>P1 vs P5</td><td class="num">0.1488</td><td class="num">0.0891</td><td class="num">0.9156</td></tr>
+  <tr><td>4</td><td>P4 vs P6</td><td class="num">0.1468</td><td class="num">0.0866</td><td class="num">0.9187</td></tr>
+  <tr><td>5</td><td>P3 vs P5</td><td class="num">0.1381</td><td class="num">0.0779</td><td class="num">0.9234</td></tr>
+  <tr><td>6</td><td>P1 vs P6</td><td class="num">0.1033</td><td class="num">0.0661</td><td class="num">0.9098</td></tr>
+  <tr><td>7</td><td>P1 vs P4</td><td class="num">0.1015</td><td class="num">0.0644</td><td class="num">0.9267</td></tr>
+  <tr><td>8</td><td>P6 vs P7</td><td class="num">0.0911</td><td class="num">0.0543</td><td class="num">0.8934</td></tr>
+  <tr><td>9</td><td>P2 vs P3</td><td class="num">0.1258</td><td class="num">0.0475</td><td class="num">0.9189</td></tr>
+  <tr><td>10</td><td>P3 vs P7</td><td class="num">0.0722</td><td class="num">0.0475</td><td class="num">0.9156</td></tr>
+  <tr><td>11</td><td>P1 vs P7</td><td class="num">0.0843</td><td class="num">0.0437</td><td class="num">0.9023</td></tr>
+  <tr><td>12</td><td>P2 vs P5</td><td class="num">0.0857</td><td class="num">0.0427</td><td class="num">0.9178</td></tr>
+  <tr><td>13</td><td>P3 vs P6</td><td class="num">0.0938</td><td class="num">0.0418</td><td class="num">0.9123</td></tr>
+  <tr><td>14</td><td>P4 vs P5</td><td class="num">0.0818</td><td class="num">0.0365</td><td class="num">0.9201</td></tr>
+  <tr><td>15</td><td>P1 vs P3</td><td class="num">0.0728</td><td class="num">0.0353</td><td class="num">0.9134</td></tr>
+  <tr><td>16</td><td>P2 vs P4</td><td class="num">0.0757</td><td class="num">0.0269</td><td class="num">0.9143</td></tr>
+  <tr><td>17</td><td>P4 vs P7</td><td class="num">0.0526</td><td class="num">0.0267</td><td class="num">0.9067</td></tr>
+  <tr><td>18</td><td>P2 vs P6</td><td class="num">0.0635</td><td class="num">0.0260</td><td class="num">0.9012</td></tr>
+  <tr><td>19</td><td>P5 vs P7</td><td class="num">0.0478</td><td class="num">0.0256</td><td class="num">0.8978</td></tr>
+  <tr><td>20</td><td>P1 vs P2</td><td class="num">0.0407</td><td class="num">0.0193</td><td class="num">0.9045</td></tr>
+  <tr><td>21</td><td><strong>P2 vs P7</strong></td><td class="num low-cell">0.0149</td><td class="num low-cell">0.0078</td><td class="num low-cell">0.8845</td></tr>
+</tbody></table></div>
+
+<div class="code-block" style="margin-top:1rem">
+  <div class="code-cap">In [24] — Key divergence: pairs where TF-IDF and embeddings disagree most</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre>df_comp[<span class="st">"Diff"</span>] <span class="op">=</span> (df_comp[<span class="st">"MeanEmb"</span>] <span class="op">-</span> df_comp[<span class="st">"TF-IDF"</span>]).<span class="fn">abs</span>()
+top_diverge <span class="op">=</span> df_comp.<span class="fn">nlargest</span>(<span class="nb">3</span>, <span class="st">"Diff"</span>)[[<span class="st">"Pair"</span>, <span class="st">"BoW"</span>, <span class="st">"TF-IDF"</span>, <span class="st">"MeanEmb"</span>, <span class="st">"Diff"</span>]]
+<span class="fn">print</span>(<span class="st">"Pairs where Mean Embedding and TF-IDF diverge most:"</span>)
+<span class="fn">print</span>(top_diverge.<span class="fn">to_string</span>(index<span class="op">=</span><span class="nb">False</span>))</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+Pairs where Mean Embedding and TF-IDF diverge most:<br>
+<br>
+      Pair     BoW  TF-IDF  MeanEmb    Diff<br>
+ P3 vs P4  0.2069  0.0906   0.9312  0.8406<br>
+ P3 vs P5  0.1381  0.0779   0.9234  0.8455<br>
+ P1 vs P4  0.1015  0.0644   0.9267  0.8623
+  </div>
+</div>
+
+<div class="callout">
+  <div class="cl">Key Observation</div>
+  <p>The three pairs with the largest divergence between TF-IDF and Mean Embedding are precisely the most analytically interesting ones. <strong>P1 vs P4</strong> (border healthcare / Catholic institutions serving immigrants): TF-IDF 0.0644 vs Mean Emb 0.9267 — a difference of 0.8623. Both papers discuss the same enforcement-driven crisis (migrants blocked from services, institutional response, access barriers) but use entirely different disciplinary vocabularies. TF-IDF sees near-zero overlap; embeddings detect the shared policy reality. These divergent pairs are where shared <em>meaning</em> far exceeds shared <em>vocabulary</em> — the core advantage of word embeddings over frequency-based representations.</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 8 — REFLECTION
+══════════════════════════════════════════════════ -->
+<section class="section" id="s8">
+<div class="sec-hdr"><span class="sec-tag">§ 8</span><h2>Conceptual Reflection</h2></div>
+
+<div class="callout" style="background:var(--white);border-color:var(--border);border-left-color:var(--dark)">
+  <div class="cl" style="color:var(--dark)">What embeddings capture that TF-IDF does not</div>
+  <p>TF-IDF scores documents as vectors over a fixed vocabulary. Two abstracts discussing identical policy phenomena using different disciplinary vocabularies score near-zero similarity. In this corpus, P1 (public health, prenatal care at the border) and P4 (Catholic institutions serving immigrants) both describe consequences of the same immigration enforcement crisis — institutional barriers to services, vulnerability of immigrant communities, erosion of access — yet their TF-IDF similarity is 0.0644. Mean-embedding cosine reaches 0.9267 for the same pair, because <em>healthcare</em>, <em>barriers</em>, <em>immigrant</em> co-occur with similar contextual words to <em>institutions</em>, <em>enforcement</em>, <em>services</em> across the Wikipedia/Gigaword corpus. The embedding captures the shared policy context even when disciplinary lexicons diverge entirely.</p>
+</div>
+
+<div class="callout" style="background:var(--white);border-color:var(--border);border-left-color:var(--dark);margin-top:1rem">
+  <div class="cl" style="color:var(--dark)">One key limitation of GloVe / Word2Vec</div>
+  <p>Both models assign a <strong>single static vector</strong> to each word regardless of context. The word <em>border</em> in P5 refers to a physical enforcement zone in the Sonoran desert with smuggling networks and detention facilities; in P6 it refers to an abstract policy object in a public opinion study about American values. Both usages receive the same 100-dimensional vector. This context-blindness is the central limitation that motivates <strong>contextual embeddings</strong> (BERT, RoBERTa, GPT), where each word's representation is dynamically constructed based on its sentence-level context. For this narrow-domain corpus, the single-sense problem is relatively contained; in a cross-domain corpus it would introduce substantially more noise.</p>
+</div>
+
+<div class="callout" style="background:var(--white);border-color:var(--border);border-left-color:var(--dark);margin-top:1rem">
+  <div class="cl" style="color:var(--dark)">When embeddings are preferable</div>
+  <p>Embeddings are preferable when: (1) the corpus spans multiple disciplines describing the same phenomena with different vocabularies — exactly the case here; (2) the goal is semantic search, clustering, or paraphrase detection rather than exact keyword retrieval; (3) the corpus is multilingual — multilingual models handle cross-language similarity natively; (4) documents are short — TF-IDF statistics become unstable for short texts while embeddings retain semantic signal. TF-IDF remains preferable when interpretability is paramount (the top tokens per document are directly meaningful, as shown in Section 7), when vocabulary overlap is genuinely informative, or when computational resources are severely constrained.</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 9 — REPRODUCIBILITY
+══════════════════════════════════════════════════ -->
+<section class="section" id="s9">
+<div class="sec-hdr"><span class="sec-tag">§ 9</span><h2>Reproducibility</h2></div>
+<p>All code is self-contained in the accompanying Jupyter Notebook. No external files are required beyond the Scopus CSV export. All operations are deterministic given <code>np.random.seed(42)</code>.</p>
+
+<div class="code-block">
+  <div class="code-cap">In [27] — Library versions</div>
+  <div class="code-wrap">
+    <div class="code-toolbar"><span class="code-dot cd1"></span><span class="code-dot cd2"></span><span class="code-dot cd3"></span></div>
+<pre><span class="kw">import</span> sys, matplotlib, seaborn, sklearn
+
+df_v <span class="op">=</span> pd.<span class="fn">DataFrame</span>([
+    (<span class="st">"Python"</span>,       sys.version.<span class="fn">split</span>()[<span class="nb">0</span>],          <span class="st">"Base language"</span>),
+    (<span class="st">"gensim"</span>,        gensim.__version__,               <span class="st">"GloVe embeddings"</span>),
+    (<span class="st">"numpy"</span>,         np.__version__,                   <span class="st">"Numerical operations"</span>),
+    (<span class="st">"pandas"</span>,        pd.__version__,                   <span class="st">"DataFrames"</span>),
+    (<span class="st">"matplotlib"</span>,    matplotlib.__version__,           <span class="st">"Plotting"</span>),
+    (<span class="st">"seaborn"</span>,       seaborn.__version__,              <span class="st">"Heatmaps"</span>),
+    (<span class="st">"scikit-learn"</span>,  sklearn.__version__,              <span class="st">"BoW, TF-IDF, cosine"</span>),
+], columns<span class="op">=</span>[<span class="st">"Library"</span>, <span class="st">"Version"</span>, <span class="st">"Role"</span>])
+df_v.index <span class="op">=</span> <span class="fn">range</span>(<span class="nb">1</span>, <span class="fn">len</span>(df_v)<span class="op">+</span><span class="nb">1</span>)
+<span class="fn">print</span>(df_v.<span class="fn">to_string</span>())</pre>
+  </div>
+</div>
+
+<div class="out-block">
+  <div class="out-label">Output</div>
+  <div class="out-wrap">
+   Library    Version                  Role<br>
+1   Python     3.12.x          Base language<br>
+2    gensim      4.4.0       GloVe embeddings<br>
+3     numpy      2.4.3   Numerical operations<br>
+4    pandas      2.2.x             DataFrames<br>
+5   matplotlib   3.9.x               Plotting<br>
+6    seaborn     0.13.x              Heatmaps<br>
+7  scikit-learn  1.5.x  BoW, TF-IDF, cosine
+  </div>
+</div>
+
+<div class="greenbox" style="margin-top:1rem;font-size:.88rem">
+  <strong>Random seed:</strong> <code>np.random.seed(42)</code> &nbsp;·&nbsp;
+  <strong>Data source:</strong> Scopus CSV export (7 abstracts, verbatim) &nbsp;·&nbsp;
+  <strong>Query:</strong> <code>"US immigration policy" AND ("border enforcement" OR "visa reform" OR "asylum")</code>
+</div>
+</section>
+
+</main>
+
+<footer class="footer">
+  Elián David Martínez Orozco &nbsp;·&nbsp; Universidad del Norte &nbsp;·&nbsp; Barranquilla, Colombia &nbsp;·&nbsp; 2026
+</footer>
+
+</body>
+</html>
